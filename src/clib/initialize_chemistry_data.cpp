@@ -18,7 +18,9 @@
 #include <math.h>
 #include "grackle.h"
 #include "grackle_macros.h"
-#include "auto_general.hpp"
+#include "auto_general.h"
+#include "grain_metal_inject_pathways.hpp"
+#include "interp_table_utils.hpp"
 #include "init_misc_species_cool_rates.hpp"  // free_misc_species_cool_rates
 #include "initialize_cloudy_data.hpp"
 #include "initialize_dust_yields.hpp"  // free_dust_yields
@@ -386,6 +388,7 @@ extern "C" int local_initialize_chemistry_data(chemistry_data *my_chemistry,
   grackle::impl::init_empty_interp_grid_props_(
     &my_rates->opaque_storage->h2dust_grain_interp_props);
   my_rates->opaque_storage->grain_species_info = nullptr;
+  my_rates->opaque_storage->inject_pathway_props = nullptr;
 
   double co_length_units, co_density_units;
   if (my_units->comoving_coordinates == TRUE) {
@@ -620,8 +623,16 @@ extern "C" int local_free_chemistry_data(chemistry_data *my_chemistry,
     // delete contents of grain_species_info
     grackle::impl::drop_GrainSpeciesInfo(
       my_rates->opaque_storage->grain_species_info);
-    // delete kcol_rate_tables, itself
+    // delete grain_species_info, itself
     delete my_rates->opaque_storage->grain_species_info;
+  }
+
+  if (my_rates->opaque_storage->inject_pathway_props != nullptr) {
+    // delete contents of inject_pathway_props
+    grackle::impl::drop_GrainMetalInjectPathways(
+      my_rates->opaque_storage->inject_pathway_props);
+    // delete inject_pathway_props, itself
+    delete my_rates->opaque_storage->inject_pathway_props;
   }
 
   delete my_rates->opaque_storage;
