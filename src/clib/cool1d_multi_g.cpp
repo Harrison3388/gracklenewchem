@@ -1510,8 +1510,13 @@ void grackle::impl::cool1d_multi_g(
         rhoH, metallicity, logTlininterp_buf.logtem, edot,
         comp2, dom, zr, mycmbTfloor, my_chemistry->UVbackground, iZscale,
         my_rates->cloudy_primordial.grid_rank, my_rates->cloudy_primordial.grid_dimension, my_rates->cloudy_primordial.grid_parameters[0],
+<<<<<<< HEAD
         my_rates->cloudy_primordial.grid_parameters[1], my_rates->cloudy_primordial.grid_parameters[2], my_rates->cloudy_primordial.data_size,
         *my_rates->cloudy_primordial.cooling_data, *my_rates->cloudy_primordial.heating_data, itmask, my_fields,
+=======
+        my_rates->cloudy_primordial.grid_parameters[1], my_rates->cloudy_primordial.grid_parameters[2], &my_rates->cloudy_primordial.data_size,
+        my_rates->cloudy_primordial.cooling_data, my_rates->cloudy_primordial.heating_data, itmask, my_fields,
+>>>>>>> 436d9e1c (Interface cleanup (useless pointers removed) and indexing fixes)
         idx_range);
 
 =======
@@ -1705,6 +1710,7 @@ void grackle::impl::cool1d_multi_g(
           rhoH, metallicity, logTlininterp_buf.logtem, edot,
           comp2, dom, zr, my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground, iZscale,
           my_rates->cloudy_metal.grid_rank, my_rates->cloudy_metal.grid_dimension, my_rates->cloudy_metal.grid_parameters[0],
+<<<<<<< HEAD
           my_rates->cloudy_metal.grid_parameters[1], my_rates->cloudy_metal.grid_parameters[2], my_rates->cloudy_metal.data_size,
           *my_rates->cloudy_metal.cooling_data, *my_rates->cloudy_metal.heating_data, itmask_tab.data(), my_fields,
 =======
@@ -1720,6 +1726,10 @@ void grackle::impl::cool1d_multi_g(
           my_rates->cloudy_metal.data_size,
           *my_rates->cloudy_metal.cooling_data,
           *my_rates->cloudy_metal.heating_data, itmask_tab.data(), my_fields,
+=======
+          my_rates->cloudy_metal.grid_parameters[1], my_rates->cloudy_metal.grid_parameters[2], &my_rates->cloudy_metal.data_size,
+          my_rates->cloudy_metal.cooling_data, my_rates->cloudy_metal.heating_data, itmask_tab.data(), my_fields,
+>>>>>>> 436d9e1c (Interface cleanup (useless pointers removed) and indexing fixes)
           idx_range);
 
     } else {
