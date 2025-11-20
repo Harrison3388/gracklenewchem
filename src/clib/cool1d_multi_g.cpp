@@ -1507,6 +1507,7 @@ void grackle::impl::cool1d_multi_g(
     grackle::impl::cool1d_cloudy_g(
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         rhoH, metallicity, logTlininterp_buf.logtem, edot,
 <<<<<<< HEAD
         comp2, dom, zr, mycmbTfloor, my_chemistry->UVbackground, iZscale,
@@ -1542,6 +1543,8 @@ void grackle::impl::cool1d_multi_g(
 >>>>>>> ff94f5d2 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 
 =======
+=======
+>>>>>>> 8154bddd ([pre-commit.ci] auto fixes from pre-commit.com hooks)
         rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, dom, zr,
         mycmbTfloor, my_chemistry->UVbackground, iZscale,
         my_rates->cloudy_primordial.grid_rank,
@@ -1549,12 +1552,19 @@ void grackle::impl::cool1d_multi_g(
         my_rates->cloudy_primordial.grid_parameters[0],
         my_rates->cloudy_primordial.grid_parameters[1],
         my_rates->cloudy_primordial.grid_parameters[2],
+<<<<<<< HEAD
         my_rates->cloudy_primordial.data_size,
         *my_rates->cloudy_primordial.cooling_data,
         *my_rates->cloudy_primordial.heating_data, itmask, my_fields,
         idx_range);
 
 >>>>>>> c3101c2c ([pre-commit.ci] auto fixes from pre-commit.com hooks)
+=======
+        &my_rates->cloudy_primordial.data_size,
+        my_rates->cloudy_primordial.cooling_data,
+        my_rates->cloudy_primordial.heating_data, itmask, my_fields, idx_range);
+
+>>>>>>> 8154bddd ([pre-commit.ci] auto fixes from pre-commit.com hooks)
     // Calculate electron density from mean molecular weight
 
     for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
@@ -1717,6 +1727,7 @@ void grackle::impl::cool1d_multi_g(
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
           rhoH, metallicity, logTlininterp_buf.logtem, edot,
           comp2, dom, zr, my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground, iZscale,
           my_rates->cloudy_metal.grid_rank, my_rates->cloudy_metal.grid_dimension, my_rates->cloudy_metal.grid_parameters[0],
@@ -1726,6 +1737,8 @@ void grackle::impl::cool1d_multi_g(
 =======
           rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, &dom, &zr,
 =======
+=======
+>>>>>>> 8154bddd ([pre-commit.ci] auto fixes from pre-commit.com hooks)
           rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, dom, zr,
           my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground,
           iZscale, my_rates->cloudy_metal.grid_rank,
@@ -1733,6 +1746,7 @@ void grackle::impl::cool1d_multi_g(
           my_rates->cloudy_metal.grid_parameters[0],
           my_rates->cloudy_metal.grid_parameters[1],
           my_rates->cloudy_metal.grid_parameters[2],
+<<<<<<< HEAD
           my_rates->cloudy_metal.data_size,
           *my_rates->cloudy_metal.cooling_data,
           *my_rates->cloudy_metal.heating_data, itmask_tab.data(), my_fields,
@@ -1740,6 +1754,11 @@ void grackle::impl::cool1d_multi_g(
           my_rates->cloudy_metal.grid_parameters[1], my_rates->cloudy_metal.grid_parameters[2], &my_rates->cloudy_metal.data_size,
           my_rates->cloudy_metal.cooling_data, my_rates->cloudy_metal.heating_data, itmask_tab.data(), my_fields,
 >>>>>>> 436d9e1c (Interface cleanup (useless pointers removed) and indexing fixes)
+=======
+          &my_rates->cloudy_metal.data_size,
+          my_rates->cloudy_metal.cooling_data,
+          my_rates->cloudy_metal.heating_data, itmask_tab.data(), my_fields,
+>>>>>>> 8154bddd ([pre-commit.ci] auto fixes from pre-commit.com hooks)
           idx_range);
 =======
         rhoH, metallicity, logTlininterp_buf.logtem, edot,
