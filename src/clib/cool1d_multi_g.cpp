@@ -1521,8 +1521,12 @@ void grackle::impl::cool1d_multi_g(
         idx_range);
 =======
         comp2, dom, zr, mycmbTfloor, my_chemistry->UVbackground, iZscale, itmask,
+<<<<<<< HEAD
         my_rates->cloudy_primordial, my_fields, idx_range);
 >>>>>>> bb59dd46 (Update of cool1d_cloudy_g function to use cloudy_data instead of its data members)
+=======
+        my_rates->cloudy_primordial, idx_range);
+>>>>>>> 59c2efbf (grackle_field_data* my_fields removed from cool1d_cloudy_g interface, we only use grackle_fields->grid_dimension[0] which can be obtained from IdxRange)
 
 =======
         rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, &dom, &zr,
@@ -1740,9 +1744,13 @@ void grackle::impl::cool1d_multi_g(
 =======
         rhoH, metallicity, logTlininterp_buf.logtem, edot,
         comp2, dom, zr, my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground, iZscale, itmask_tab.data(),
+<<<<<<< HEAD
         my_rates->cloudy_metal, my_fields,
         idx_range);
 >>>>>>> bb59dd46 (Update of cool1d_cloudy_g function to use cloudy_data instead of its data members)
+=======
+        my_rates->cloudy_metal, idx_range);
+>>>>>>> 59c2efbf (grackle_field_data* my_fields removed from cool1d_cloudy_g interface, we only use grackle_fields->grid_dimension[0] which can be obtained from IdxRange)
 
     } else {
       FORTRAN_NAME(cool1d_cloudy_old_tables_g)(
