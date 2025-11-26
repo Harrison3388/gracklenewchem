@@ -1504,6 +1504,7 @@ void grackle::impl::cool1d_multi_g(
   if (my_chemistry->primordial_chemistry == 0) {
     iZscale = 0;
     mycmbTfloor = 0;
+<<<<<<< HEAD
     grackle::impl::cool1d_cloudy_g(
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -1541,6 +1542,12 @@ void grackle::impl::cool1d_multi_g(
         my_rates->cloudy_primordial.cooling_data,
         my_rates->cloudy_primordial.heating_data, itmask, my_fields, idx_range);
 >>>>>>> ff94f5d2 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
+=======
+    grackle::impl::cool1d_cloudy_g(rhoH, metallicity, logTlininterp_buf.logtem,
+                                   edot, comp2, dom, zr, mycmbTfloor,
+                                   my_chemistry->UVbackground, iZscale, itmask,
+                                   my_rates->cloudy_primordial, idx_range);
+>>>>>>> 0223ee04 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 
 =======
 =======
@@ -1728,6 +1735,7 @@ void grackle::impl::cool1d_multi_g(
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
           rhoH, metallicity, logTlininterp_buf.logtem, edot,
           comp2, dom, zr, my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground, iZscale,
           my_rates->cloudy_metal.grid_rank, my_rates->cloudy_metal.grid_dimension, my_rates->cloudy_metal.grid_parameters[0],
@@ -1770,6 +1778,11 @@ void grackle::impl::cool1d_multi_g(
 =======
         my_rates->cloudy_metal, idx_range);
 >>>>>>> 59c2efbf (grackle_field_data* my_fields removed from cool1d_cloudy_g interface, we only use grackle_fields->grid_dimension[0] which can be obtained from IdxRange)
+=======
+          rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, dom, zr,
+          my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground,
+          iZscale, itmask_tab.data(), my_rates->cloudy_metal, idx_range);
+>>>>>>> 0223ee04 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 
     } else {
       FORTRAN_NAME(cool1d_cloudy_old_tables_g)(
