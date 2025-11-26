@@ -1508,6 +1508,7 @@ void grackle::impl::cool1d_multi_g(
 <<<<<<< HEAD
 <<<<<<< HEAD
         rhoH, metallicity, logTlininterp_buf.logtem, edot,
+<<<<<<< HEAD
         comp2, dom, zr, mycmbTfloor, my_chemistry->UVbackground, iZscale,
         my_rates->cloudy_primordial.grid_rank, my_rates->cloudy_primordial.grid_dimension, my_rates->cloudy_primordial.grid_parameters[0],
 <<<<<<< HEAD
@@ -1518,6 +1519,10 @@ void grackle::impl::cool1d_multi_g(
         my_rates->cloudy_primordial.cooling_data, my_rates->cloudy_primordial.heating_data, itmask, my_fields,
 >>>>>>> 436d9e1c (Interface cleanup (useless pointers removed) and indexing fixes)
         idx_range);
+=======
+        comp2, dom, zr, mycmbTfloor, my_chemistry->UVbackground, iZscale, itmask,
+        my_rates->cloudy_primordial, my_fields, idx_range);
+>>>>>>> bb59dd46 (Update of cool1d_cloudy_g function to use cloudy_data instead of its data members)
 
 =======
         rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, &dom, &zr,
@@ -1707,6 +1712,7 @@ void grackle::impl::cool1d_multi_g(
       grackle::impl::cool1d_cloudy_g(
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
           rhoH, metallicity, logTlininterp_buf.logtem, edot,
           comp2, dom, zr, my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground, iZscale,
           my_rates->cloudy_metal.grid_rank, my_rates->cloudy_metal.grid_dimension, my_rates->cloudy_metal.grid_parameters[0],
@@ -1731,6 +1737,12 @@ void grackle::impl::cool1d_multi_g(
           my_rates->cloudy_metal.cooling_data, my_rates->cloudy_metal.heating_data, itmask_tab.data(), my_fields,
 >>>>>>> 436d9e1c (Interface cleanup (useless pointers removed) and indexing fixes)
           idx_range);
+=======
+        rhoH, metallicity, logTlininterp_buf.logtem, edot,
+        comp2, dom, zr, my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground, iZscale, itmask_tab.data(),
+        my_rates->cloudy_metal, my_fields,
+        idx_range);
+>>>>>>> bb59dd46 (Update of cool1d_cloudy_g function to use cloudy_data instead of its data members)
 
     } else {
       FORTRAN_NAME(cool1d_cloudy_old_tables_g)(
