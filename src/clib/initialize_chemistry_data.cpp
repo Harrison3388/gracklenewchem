@@ -22,8 +22,7 @@
 #include "inject_model/grain_metal_inject_pathways.hpp"
 #include "interp_table_utils.hpp"
 #include "init_misc_species_cool_rates.hpp"  // free_misc_species_cool_rates
-#include "initialize_cloudy_data.hpp"
-#include "initialize_dust_yields.hpp"  // free_dust_yields
+#include "initialize_cloudy_data.h"
 #include "initialize_rates.hpp"
 #include "initialize_UVbackground_data.hpp"
 #include "internal_types.hpp" // drop_CollisionalRxnRateCollection
@@ -528,11 +527,6 @@ extern "C" int local_free_chemistry_data(chemistry_data *my_chemistry,
   if (grackle::impl::free_misc_species_cool_rates(my_chemistry, my_rates) != GR_SUCCESS) {
     fprintf(stderr, "Error in free_metal_chemistry_rates.\n");
     return GR_FAIL;
-  }
-
-  if (grackle::impl::free_dust_yields(my_chemistry, my_rates) == FAIL) {
-    fprintf(stderr, "Error in local_free_dust_yields.\n");
-    return FAIL;
   }
 
   // start freeing memory associated with opaque storage
