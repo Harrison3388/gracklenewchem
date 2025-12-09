@@ -150,8 +150,6 @@ static void initialize_empty_chemistry_data_storage_struct(chemistry_data_storag
 
   grackle::impl::initialize_empty_interp_grid_(&my_rates->alphap);
 
-  my_rates->gr_N = NULL;
-  my_rates->gr_Size = 0;
   my_rates->gr_Td = NULL;
   my_rates->SN0_N = 0;
 
@@ -513,8 +511,6 @@ extern "C" int local_free_chemistry_data(chemistry_data *my_chemistry,
     // free_misc_species_cool_rates
 
     grackle::impl::free_interp_grid_(&my_rates->alphap);
-
-    GRACKLE_FREE(my_rates->gr_N);
 
     GRACKLE_FREE(my_rates->k13dd);
     GRACKLE_FREE(my_rates->h2dust);

@@ -617,7 +617,6 @@ typedef struct
   gr_interp_grid alphap;
 
   /* metal/dust abundance */
-  int    *gr_N, gr_Size;
   double *gr_Td;
   int     SN0_N;
 
