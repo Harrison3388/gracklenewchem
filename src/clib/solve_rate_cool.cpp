@@ -1035,7 +1035,9 @@ int solve_rate_cool(
 
     // Correct the species to ensure consistency (i.e. type conservation)
 
-    grackle::impl::make_consistent(imetal, dom, my_chemistry, my_rates, my_fields);
+    grackle::impl::make_consistent(
+        imetal, dom, my_chemistry,
+        my_rates->opaque_storage->inject_pathway_props, my_fields);
 
   }
 
