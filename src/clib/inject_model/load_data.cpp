@@ -161,9 +161,15 @@ extern "C" int setup_yield_table_callback(
       const inj_input::GrainSpeciesYieldProps& yield_info =
           input->initial_grain_props[yield_idx];
 
+<<<<<<< HEAD
       int grain_species_idx = static_cast<int>(FrozenKeyIdxBiMap_idx_from_key(
           my_ctx->grain_species_names, yield_info.name));
       if (grain_species_idx == static_cast<int>(bimap::invalid_val)) {
+=======
+      bimap::AccessRslt maybe_grain_idx =
+          FrozenKeyIdxBiMap_find(my_ctx->grain_species_names, yield_info.name);
+      if (!maybe_grain_idx.has_value) {
+>>>>>>> 21768cbe (apply clang-format)
         continue;
       }
 
