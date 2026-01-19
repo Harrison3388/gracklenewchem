@@ -419,7 +419,7 @@ static void set_subcycle_dt_from_chemistry_scheme_(
           my_chemistry, my_rates, dlogtem, logTlininterp_buf,
           kcr_buf.data[CollisionalRxnLUT::k13],
           kcr_buf.data[CollisionalRxnLUT::k22],
-          d(i,j,k)-dust(i,j,k), tgas, p2d, edot, i
+          d(i,j,k), tgas, p2d, edot, i
         );
 
         dtit[i] = std::fmin(dtit[i], 0.1*Heq_div_dHeqdt);
@@ -433,7 +433,7 @@ static void set_subcycle_dt_from_chemistry_scheme_(
       // we may want to handle this case and the next case in a separate
       // function (they determine the timestep using very different logic than
       // in the above case)
-      dtit[i] = grackle::impl::fmin(std::fabs(0.1*e(i,j,k)/edot[i]*(d(i,j,k)-dust(i,j,k))),
+      dtit[i] = grackle::impl::fmin(std::fabs(0.1*e(i,j,k)/edot[i]*d(i,j,k)),
                                     dt-ttot[i],
                                     0.5*dt);
 
@@ -740,10 +740,6 @@ int solve_rate_cool(
     std::vector<double> mmw(my_fields->grid_dimension[0]);
     std::vector<double> edot(my_fields->grid_dimension[0]);
 
-    // Arrays to store dust growth and destruction mass changes
-    std::vector<double> growth_dM(my_fields->grid_dimension[0]);
-    std::vector<double> destruction_dM(my_fields->grid_dimension[0]);
-
     // iteration masks
     std::vector<gr_mask_type> itmask(my_fields->grid_dimension[0]);
     std::vector<gr_mask_type> itmask_metal(my_fields->grid_dimension[0]);
@@ -754,10 +750,6 @@ int solve_rate_cool(
                                        my_fields->grid_dimension[1],
                                        my_fields->grid_dimension[2]);
     grackle::impl::View<gr_float***> e(my_fields->internal_energy,
-                                       my_fields->grid_dimension[0],
-                                       my_fields->grid_dimension[1],
-                                       my_fields->grid_dimension[2]);
-    grackle::impl::View<gr_float***> dust(my_fields->dust_density,
                                        my_fields->grid_dimension[0],
                                        my_fields->grid_dimension[1],
                                        my_fields->grid_dimension[2]);
@@ -795,7 +787,7 @@ int solve_rate_cool(
       // A useful slice variable since we do this a lot
       // -> we don't need it for primordial_chemistry==0
       for (int i = idx_range.i_start; i < idx_range.i_stop; i++) {
-        spsolvbuf.ddom[i] = (d(i,j,k) - dust(i,j,k)) * dom;
+        spsolvbuf.ddom[i] = d(i,j,k) * dom;
       }
 
       // declare 2 variables (primarily used for subcycling, but also used in
@@ -824,8 +816,7 @@ int solve_rate_cool(
           *my_uvb_rates, internalu,
           idx_range,
           grain_temperatures, logTlininterp_buf,
-          cool1dmulti_buf, coolingheating_buf,
-          dtit.data()
+          cool1dmulti_buf, coolingheating_buf
         );
 
         if (my_chemistry->primordial_chemistry > 0)  {
@@ -901,7 +892,7 @@ int solve_rate_cool(
         if (my_chemistry->with_radiative_cooling == 1)  {
           for (int i = idx_range.i_start; i < idx_range.i_stop; i++) {
             if (energy_itmask[i] != MASK_FALSE) {
-              e(i,j,k) = e(i,j,k) + (gr_float)(edot[i]/(d(i,j,k)-dust(i,j,k))*dtit[i]);
+              e(i,j,k) = e(i,j,k) + (gr_float)(edot[i]/d(i,j,k)*dtit[i]);
             }
           }
         }
@@ -935,20 +926,8 @@ int solve_rate_cool(
 
         }
 
-        // Calculate dust growth rates and store in growth_dM array
         grackle::impl::dust_growth(
-          my_chemistry, my_fields, internalu, idx_range, itmask.data(), dtit.data(),
-          tgas.data(), growth_dM.data());
-
-        // Calculate dust destruction rates and store in destruction_dM array
-        grackle::impl::dust_destruction(
-          my_chemistry, my_fields, internalu, idx_range, itmask.data(),
-          dtit.data(), tgas.data(), destruction_dM.data());
-
-        // Apply the calculated rates to update density fields
-        grackle::impl::dust_update(
-          my_chemistry, my_fields, internalu, idx_range, itmask.data(), dtit.data(),
-          growth_dM.data(), destruction_dM.data(), false);
+          my_chemistry, my_fields, internalu, idx_range, itmask.data(), dtit.data(), tgas.data(), false);
 
         // Add the timestep to the elapsed time for each cell and find
         //  minimum elapsed time step in this row
@@ -964,6 +943,8 @@ int solve_rate_cool(
         // If all cells are done (in idx_range), break out of subcycle loop
         if (std::fabs(dt-ttmin) < tolerance*dt) { break; }
 
+        // grackle::impl::dust_growth(
+        //   my_chemistry, my_fields, internalu, idx_range, dtit.data(), tgas.data(), false);
 
       }  // subcycle iteration loop (for current idx_range)
 

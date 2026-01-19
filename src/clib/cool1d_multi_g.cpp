@@ -17,11 +17,8 @@
 #include <vector>
 #include <iostream>
 
-<<<<<<< HEAD
-#include "cool1d_cloudy_old_tables_g.hpp"
-=======
 #include "cool1d_cloudy_g.hpp"
->>>>>>> e3583c8c (call to cool1d_cloudy_g updated to cpp version)
+#include "cool1d_cloudy_old_tables_g.hpp"
 #include "cool1d_multi_g.hpp"
 #include "grackle.h"
 #include "fortran_func_decls.h"
@@ -42,8 +39,7 @@ void grackle::impl::cool1d_multi_g(
     grackle::impl::GrainSpeciesCollection grain_temperatures,
     grackle::impl::LogTLinInterpScratchBuf logTlininterp_buf,
     grackle::impl::Cool1DMultiScratchBuf cool1dmulti_buf,
-    grackle::impl::CoolHeatScratchBuf coolingheating_buf,
-    double* dtit) {
+    grackle::impl::CoolHeatScratchBuf coolingheating_buf) {
   grackle::impl::View<gr_float***> d(
       my_fields->density, my_fields->grid_dimension[0],
       my_fields->grid_dimension[1], my_fields->grid_dimension[2]);
@@ -272,7 +268,7 @@ void grackle::impl::cool1d_multi_g(
 
   for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
     if (itmask[i] != MASK_FALSE) {
-      p2d[i] = (my_chemistry->Gamma - 1.) * (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) *
+      p2d[i] = (my_chemistry->Gamma - 1.) * d(i, idx_range.j, idx_range.k) *
                e(i, idx_range.j, idx_range.k);
     }
   }
@@ -290,15 +286,14 @@ void grackle::impl::cool1d_multi_g(
         if (itmask[i] != MASK_FALSE) {
           rhoH[i] = my_chemistry->HydrogenFractionByMass *
                     (d(i, idx_range.j, idx_range.k) -
-                     metal(i, idx_range.j, idx_range.k) -
-                     dust(i, idx_range.j, idx_range.k));
+                     metal(i, idx_range.j, idx_range.k));
         }
       }
     } else {
       for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
         if (itmask[i] != MASK_FALSE) {
           rhoH[i] = my_chemistry->HydrogenFractionByMass *
-                    (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k));
+                    d(i, idx_range.j, idx_range.k);
         }
       }
     }
@@ -355,7 +350,7 @@ void grackle::impl::cool1d_multi_g(
       if (itmask[i] != MASK_FALSE) {
         tgas[i] = std::fmax(p2d[i] * internalu.utem / mmw[i],
                             my_chemistry->TemperatureStart);
-        mmw[i] = (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) / mmw[i];
+        mmw[i] = d(i, idx_range.j, idx_range.k) / mmw[i];
       }
     }
 
@@ -438,7 +433,7 @@ void grackle::impl::cool1d_multi_g(
     for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
       if (itmask[i] != MASK_FALSE) {
         metallicity[i] = metal(i, idx_range.j, idx_range.k) /
-                         (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) /
+                         d(i, idx_range.j, idx_range.k) /
                          my_chemistry->SolarMetalFractionByMass;
       }
     }
@@ -473,7 +468,7 @@ void grackle::impl::cool1d_multi_g(
       logT[i] = std::log10(tgas[i]);
       if (my_chemistry->cmb_temperature_floor == 1)
         logTcmb[i] = std::log10(comp2);
-      logrho[i] = std::log10((d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * dom * mh);
+      logrho[i] = std::log10(d(i, idx_range.j, idx_range.k) * dom * mh);
       if (my_chemistry->primordial_chemistry > 0) {
         logH[i] = std::log10(HI(i, idx_range.j, idx_range.k) * dom);
         logH2[i] = std::log10(HI(i, idx_range.j, idx_range.k) * dom);
@@ -503,7 +498,7 @@ void grackle::impl::cool1d_multi_g(
       lshield_con[i] = std::sqrt(
           (my_chemistry->Gamma * pi_fortran_val * kboltz_grflt * tgas[i]) /
           (GravConst_grflt * mmw[i] * mh_local_var *
-           (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * dom * mh_local_var));
+           d(i, idx_range.j, idx_range.k) * dom * mh_local_var));
     }
   }
 
@@ -795,7 +790,7 @@ void grackle::impl::cool1d_multi_g(
           // RA04.
           if (my_chemistry->h2_optical_depth_approximation == 1) {
             fudge = std::pow(
-                (0.76 * (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * dom / 8.e9), (-0.45));
+                (0.76 * d(i, idx_range.j, idx_range.k) * dom / 8.e9), (-0.45));
             fudge = std::fmin(fudge, 1.);
           } else {
             fudge = 1.;
@@ -865,7 +860,7 @@ void grackle::impl::cool1d_multi_g(
           // RA04.
           if (my_chemistry->h2_optical_depth_approximation == 1) {
             fudge = std::pow(
-                (0.76 * (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * dom / 8.e9), (-0.45));
+                (0.76 * d(i, idx_range.j, idx_range.k) * dom / 8.e9), (-0.45));
             fudge = std::fmin(fudge, 1.);
           } else {
             fudge = 1.;
@@ -969,21 +964,21 @@ void grackle::impl::cool1d_multi_g(
       for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
         if (itmask[i] != MASK_FALSE) {
           // Only calculate if H2I(i) is a substantial fraction
-          if ((d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * dom > 1e10) {
+          if (d(i, idx_range.j, idx_range.k) * dom > 1e10) {
             ciefudge = 1.;
-            tau = std::pow((((d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) / 2e16) * dom),
+            tau = std::pow(((d(i, idx_range.j, idx_range.k) / 2e16) * dom),
                            2.8);  // 2e16 is in units of cm^-3
             tau = std::fmax(tau, 1.e-5);
             ciefudge = std::fmin((1. - std::exp(-tau)) / tau, 1.);
             // Matt's attempt at a second exponentialier cutoff
-            tau = std::pow((((d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) / 2.e18) * dom),
+            tau = std::pow(((d(i, idx_range.j, idx_range.k) / 2.e18) * dom),
                            8.);  // 2e18 is in units of cm^-3
             tau = std::fmax(tau, 1.e-5);
             ciefudge = ciefudge * std::fmin((1.f - std::exp(-tau)) / tau, 1.);
             // ciefudge, which is applied to the continuum, is applied to edot
             edot[i] =
                 ciefudge * (edot[i] - H2I(i, idx_range.j, idx_range.k) *
-                                          ((d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) *
+                                          (d(i, idx_range.j, idx_range.k) *
                                            coolingheating_buf.cieco[i]));
           }
         }
@@ -1109,24 +1104,12 @@ void grackle::impl::cool1d_multi_g(
     }
   }
   // Compute grain size increment
-<<<<<<< HEAD
   // if ((my_chemistry->use_dust_density_field > 0) &&
   //     (my_chemistry->dust_species > 0)) {
   //   grackle::impl::fortran_wrapper::calc_grain_size_increment_1d(
   //       dom, idx_range, itmask_metal, my_chemistry, my_rates, my_fields,
   //       internal_dust_prop_buf);
   // }
-=======
-  if ((my_chemistry->use_dust_density_field > 0) &&
-      (my_chemistry->dust_species > 0)) {
-    grackle::impl::fortran_wrapper::calc_grain_size_increment_1d(
-        dom, idx_range, itmask_metal, my_chemistry,
-        my_rates->opaque_storage->inject_pathway_props, my_fields,
-        internal_dust_prop_buf);
-    grackle::impl::dust_growth(
-      my_chemistry, my_fields, internalu, idx_range, dtit, tgas, true);
-  }
->>>>>>> 24748cbd (tweak signature of f_wrap::calc_grain_size_increment_1d)
 
   // Calculate dust to gas ratio AND interstellar radiation field
   // -> an earlier version of this logic would store values @ indices
@@ -1145,7 +1128,7 @@ void grackle::impl::cool1d_multi_g(
         if (itmask[i] != MASK_FALSE) {
           // it may be faster to remove this branching
           dust2gas[i] = dust(i, idx_range.j, idx_range.k) /
-                        (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k));
+                        d(i, idx_range.j, idx_range.k);
         }
       }
     } else {
@@ -1189,7 +1172,7 @@ void grackle::impl::cool1d_multi_g(
         } else {
           if (my_chemistry->use_multiple_dust_temperatures == 0) {
             Ldst[i] = -gasgr[i] * (tgas[i] - tdust[i]) *
-                      (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * rhoH[i];
+                      d(i, idx_range.j, idx_range.k) * rhoH[i];
           } else {
             if (my_chemistry->dust_species > 0) {
               Ldst[i] =
@@ -1199,7 +1182,7 @@ void grackle::impl::cool1d_multi_g(
                     gas_grainsp_heatrate.data[OnlyGrainSpLUT::AC_dust][i] *
                         (tgas[i] -
                          grain_temperatures.data[OnlyGrainSpLUT::AC_dust][i])) *
-                  (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * rhoH[i];
+                  d(i, idx_range.j, idx_range.k) * rhoH[i];
             }
 
             if (my_chemistry->dust_species > 1) {
@@ -1229,7 +1212,7 @@ void grackle::impl::cool1d_multi_g(
                    gas_grainsp_heatrate.data[OnlyGrainSpLUT::Al2O3_dust][i] *
                        (tgas[i] - grain_temperatures
                                       .data[OnlyGrainSpLUT::Al2O3_dust][i])) *
-                      (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * rhoH[i];
+                      d(i, idx_range.j, idx_range.k) * rhoH[i];
             }
 
             if (my_chemistry->dust_species > 2) {
@@ -1244,7 +1227,7 @@ void grackle::impl::cool1d_multi_g(
                    gas_grainsp_heatrate.data[OnlyGrainSpLUT::H2O_ice_dust][i] *
                        (tgas[i] - grain_temperatures
                                       .data[OnlyGrainSpLUT::H2O_ice_dust][i])) *
-                      (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * rhoH[i];
+                      d(i, idx_range.j, idx_range.k) * rhoH[i];
             }
           }
         }
@@ -1328,7 +1311,7 @@ void grackle::impl::cool1d_multi_g(
           }
         }
 
-        alpha[i] = alpha[i] + alphad[i] * (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * dom *
+        alpha[i] = alpha[i] + alphad[i] * d(i, idx_range.j, idx_range.k) * dom *
                                   mh_local_var;
       }
     }
@@ -1507,74 +1490,11 @@ void grackle::impl::cool1d_multi_g(
   if (my_chemistry->primordial_chemistry == 0) {
     iZscale = 0;
     mycmbTfloor = 0;
-<<<<<<< HEAD
-    grackle::impl::cool1d_cloudy_g(
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-        rhoH, metallicity, logTlininterp_buf.logtem, edot,
-<<<<<<< HEAD
-        comp2, dom, zr, mycmbTfloor, my_chemistry->UVbackground, iZscale,
-        my_rates->cloudy_primordial.grid_rank, my_rates->cloudy_primordial.grid_dimension, my_rates->cloudy_primordial.grid_parameters[0],
-<<<<<<< HEAD
-        my_rates->cloudy_primordial.grid_parameters[1], my_rates->cloudy_primordial.grid_parameters[2], my_rates->cloudy_primordial.data_size,
-        *my_rates->cloudy_primordial.cooling_data, *my_rates->cloudy_primordial.heating_data, itmask, my_fields,
-=======
-        my_rates->cloudy_primordial.grid_parameters[1], my_rates->cloudy_primordial.grid_parameters[2], &my_rates->cloudy_primordial.data_size,
-        my_rates->cloudy_primordial.cooling_data, my_rates->cloudy_primordial.heating_data, itmask, my_fields,
->>>>>>> 436d9e1c (Interface cleanup (useless pointers removed) and indexing fixes)
-        idx_range);
-=======
-        comp2, dom, zr, mycmbTfloor, my_chemistry->UVbackground, iZscale, itmask,
-<<<<<<< HEAD
-        my_rates->cloudy_primordial, my_fields, idx_range);
->>>>>>> bb59dd46 (Update of cool1d_cloudy_g function to use cloudy_data instead of its data members)
-=======
-        my_rates->cloudy_primordial, idx_range);
->>>>>>> 59c2efbf (grackle_field_data* my_fields removed from cool1d_cloudy_g interface, we only use grackle_fields->grid_dimension[0] which can be obtained from IdxRange)
-
-=======
-        rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, &dom, &zr,
-        &mycmbTfloor, &my_chemistry->UVbackground, &iZscale,
-        &my_rates->cloudy_primordial.grid_rank,
-        my_rates->cloudy_primordial.grid_dimension,
-        my_rates->cloudy_primordial.grid_parameters[0],
-        my_rates->cloudy_primordial.grid_parameters[1],
-        my_rates->cloudy_primordial.grid_parameters[2],
-        &my_rates->cloudy_primordial.data_size,
-        my_rates->cloudy_primordial.cooling_data,
-        my_rates->cloudy_primordial.heating_data, itmask, my_fields, idx_range);
->>>>>>> ff94f5d2 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
-=======
     grackle::impl::cool1d_cloudy_g(rhoH, metallicity, logTlininterp_buf.logtem,
                                    edot, comp2, dom, zr, mycmbTfloor,
                                    my_chemistry->UVbackground, iZscale, itmask,
                                    my_rates->cloudy_primordial, idx_range);
->>>>>>> 0223ee04 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 
-=======
-=======
->>>>>>> 8154bddd ([pre-commit.ci] auto fixes from pre-commit.com hooks)
-        rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, dom, zr,
-        mycmbTfloor, my_chemistry->UVbackground, iZscale,
-        my_rates->cloudy_primordial.grid_rank,
-        my_rates->cloudy_primordial.grid_dimension,
-        my_rates->cloudy_primordial.grid_parameters[0],
-        my_rates->cloudy_primordial.grid_parameters[1],
-        my_rates->cloudy_primordial.grid_parameters[2],
-<<<<<<< HEAD
-        my_rates->cloudy_primordial.data_size,
-        *my_rates->cloudy_primordial.cooling_data,
-        *my_rates->cloudy_primordial.heating_data, itmask, my_fields,
-        idx_range);
-
->>>>>>> c3101c2c ([pre-commit.ci] auto fixes from pre-commit.com hooks)
-=======
-        &my_rates->cloudy_primordial.data_size,
-        my_rates->cloudy_primordial.cooling_data,
-        my_rates->cloudy_primordial.heating_data, itmask, my_fields, idx_range);
-
->>>>>>> 8154bddd ([pre-commit.ci] auto fixes from pre-commit.com hooks)
     // Calculate electron density from mean molecular weight
 
     for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
@@ -1586,10 +1506,10 @@ void grackle::impl::cool1d_multi_g(
           cool1dmulti_buf.myde[i] =
               cool1dmulti_buf.myde[i] -
               mmw[i] * metal(i, idx_range.j, idx_range.k) /
-                  ((d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * mu_metal);
+                  (d(i, idx_range.j, idx_range.k) * mu_metal);
         }
         cool1dmulti_buf.myde[i] =
-            (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * cool1dmulti_buf.myde[i] / mmw[i];
+            d(i, idx_range.j, idx_range.k) * cool1dmulti_buf.myde[i] / mmw[i];
         cool1dmulti_buf.myde[i] = std::fmax(cool1dmulti_buf.myde[i], 0.);
       }
     }
@@ -1734,78 +1654,9 @@ void grackle::impl::cool1d_multi_g(
     if (my_rates->cloudy_data_new == 1) {
       iZscale = 1;
       grackle::impl::cool1d_cloudy_g(
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-          rhoH, metallicity, logTlininterp_buf.logtem, edot,
-          comp2, dom, zr, my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground, iZscale,
-          my_rates->cloudy_metal.grid_rank, my_rates->cloudy_metal.grid_dimension, my_rates->cloudy_metal.grid_parameters[0],
-<<<<<<< HEAD
-          my_rates->cloudy_metal.grid_parameters[1], my_rates->cloudy_metal.grid_parameters[2], my_rates->cloudy_metal.data_size,
-          *my_rates->cloudy_metal.cooling_data, *my_rates->cloudy_metal.heating_data, itmask_tab.data(), my_fields,
-=======
-          rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, &dom, &zr,
-=======
-=======
->>>>>>> 8154bddd ([pre-commit.ci] auto fixes from pre-commit.com hooks)
-          rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, dom, zr,
-          my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground,
-          iZscale, my_rates->cloudy_metal.grid_rank,
-          my_rates->cloudy_metal.grid_dimension,
-          my_rates->cloudy_metal.grid_parameters[0],
-          my_rates->cloudy_metal.grid_parameters[1],
-          my_rates->cloudy_metal.grid_parameters[2],
-<<<<<<< HEAD
-          my_rates->cloudy_metal.data_size,
-          *my_rates->cloudy_metal.cooling_data,
-          *my_rates->cloudy_metal.heating_data, itmask_tab.data(), my_fields,
-=======
-          my_rates->cloudy_metal.grid_parameters[1], my_rates->cloudy_metal.grid_parameters[2], &my_rates->cloudy_metal.data_size,
-          my_rates->cloudy_metal.cooling_data, my_rates->cloudy_metal.heating_data, itmask_tab.data(), my_fields,
->>>>>>> 436d9e1c (Interface cleanup (useless pointers removed) and indexing fixes)
-=======
-          &my_rates->cloudy_metal.data_size,
-          my_rates->cloudy_metal.cooling_data,
-          my_rates->cloudy_metal.heating_data, itmask_tab.data(), my_fields,
->>>>>>> 8154bddd ([pre-commit.ci] auto fixes from pre-commit.com hooks)
-          idx_range);
-=======
-        rhoH, metallicity, logTlininterp_buf.logtem, edot,
-        comp2, dom, zr, my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground, iZscale, itmask_tab.data(),
-<<<<<<< HEAD
-        my_rates->cloudy_metal, my_fields,
-        idx_range);
->>>>>>> bb59dd46 (Update of cool1d_cloudy_g function to use cloudy_data instead of its data members)
-=======
-        my_rates->cloudy_metal, idx_range);
->>>>>>> 59c2efbf (grackle_field_data* my_fields removed from cool1d_cloudy_g interface, we only use grackle_fields->grid_dimension[0] which can be obtained from IdxRange)
-=======
           rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, dom, zr,
           my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground,
           iZscale, itmask_tab.data(), my_rates->cloudy_metal, idx_range);
->>>>>>> 0223ee04 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
-
-    } else {
-      FORTRAN_NAME(cool1d_cloudy_old_tables_g)(
-          d.data(), de.data(), rhoH, metallicity, &my_fields->grid_dimension[0],
-          &my_fields->grid_dimension[1], &my_fields->grid_dimension[2],
-          &idx_range.i_start, &idx_range.i_end, &idx_range.jp1, &idx_range.kp1,
-          logTlininterp_buf.logtem, edot, &comp2,
-          &my_chemistry->primordial_chemistry, &dom, &zr,
->>>>>>> c3101c2c ([pre-commit.ci] auto fixes from pre-commit.com hooks)
-          &my_chemistry->cmb_temperature_floor, &my_chemistry->UVbackground,
-          &iZscale, &my_rates->cloudy_metal.grid_rank,
-          my_rates->cloudy_metal.grid_dimension,
-          my_rates->cloudy_metal.grid_parameters[0],
-          my_rates->cloudy_metal.grid_parameters[1],
-          my_rates->cloudy_metal.grid_parameters[2],
-          &my_rates->cloudy_metal.data_size,
-          my_rates->cloudy_metal.cooling_data,
-          my_rates->cloudy_metal.heating_data, itmask_tab.data(), my_fields,
->>>>>>> ff94f5d2 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
-          idx_range);
 
     } else {
       grackle::impl::cool1d_cloudy_old_tables_g(
@@ -2055,7 +1906,7 @@ void grackle::impl::cool1d_multi_g(
     for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
       if (itmask[i] != MASK_FALSE) {
         edot[i] = edot[i] + Mheat(i, idx_range.j, idx_range.k) *
-                                (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * mh_local_var /
+                                d(i, idx_range.j, idx_range.k) * mh_local_var /
                                 coolunit / dom;
       }
     }
