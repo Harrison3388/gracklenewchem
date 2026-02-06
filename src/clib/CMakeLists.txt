@@ -114,9 +114,12 @@ add_library(Grackle_Grackle
   initialize_chemistry_data.cpp
 <<<<<<< HEAD
   initialize_cloudy_data.cpp initialize_cloudy_data.hpp
+<<<<<<< HEAD
   initialize_dust_yields.cpp initialize_dust_yields.hpp
 =======
 >>>>>>> d0d8a92a (rename initialize_dust_yields -> load_data)
+=======
+>>>>>>> 2f0b7473 (Remove initialize_dust_fields from build; fix merge.)
   initialize_rates.cpp initialize_rates.hpp
   inject_model/grain_metal_inject_pathways.hpp
   inject_model/load_data.cpp inject_model/load_data.hpp
