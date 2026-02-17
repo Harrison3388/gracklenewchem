@@ -53,7 +53,7 @@ void grackle::impl::dust_growth(
 
         if (itmask[i] != MASK_FALSE) {
 
-            double rho_gas      = d(i,idx_range.j,idx_range.k);
+            double rho_gas      = d(i,idx_range.j,idx_range.k) - dust(i,idx_range.j,idx_range.k);
             double rho_dust = dust(i,idx_range.j,idx_range.k);
             double rho_metal= metal(i,idx_range.j,idx_range.k);
             double temp     = t_gas[i];
@@ -131,7 +131,7 @@ void grackle::impl::dust_destruction(
 
         if (itmask[i] != MASK_FALSE) {
 
-            double rho_gas   = d(i,idx_range.j,idx_range.k);
+            double rho_gas   = d(i,idx_range.j,idx_range.k) - dust(i,idx_range.j,idx_range.k);
             double rho_dust  = dust(i,idx_range.j,idx_range.k);
             double rho_metal = metal(i,idx_range.j,idx_range.k);
             double sne_this = use_sne ? sne(i,idx_range.j,idx_range.k) : 0.0;
@@ -206,7 +206,7 @@ void grackle::impl::dust_update(
     for (int i = idx_range.i_start; i < idx_range.i_stop; i++) {
         if (itmask[i] != MASK_FALSE) {
 
-            double rho_gas   = d(i,idx_range.j,idx_range.k);
+            double rho_gas   = d(i,idx_range.j,idx_range.k) - dust(i,idx_range.j,idx_range.k);
             double rho_dust  = dust(i,idx_range.j,idx_range.k);
             double rho_metal = metal(i,idx_range.j,idx_range.k);
             double dt = dt_value[i];
@@ -230,9 +230,6 @@ void grackle::impl::dust_update(
                 rho_metal = rho_metal + dM_conserv;
             }
 
-            // Adjust gas density to conserve total mass
-            rho_gas = rho_gas + (rho_metal - metal(i,idx_range.j,idx_range.k)); // Should be changed to gas_density staying constant (make_consistent.cpp)
-
             // Safety checks
             if (rho_dust < 0) {
                 fprintf(stderr, "ERROR: Negative dust density at cell %d: rho_dust=%e\n", i, rho_dust);
@@ -243,11 +240,10 @@ void grackle::impl::dust_update(
                     "internal: dt=%e growth_dM=%.10e destruction_dM=%.10e dM_rate=%.15e gas=%.15e dust=%.15e metal=%.15e\n",
                      dt, growth_dM[i], destruction_dM[i], dM_total, rho_gas, rho_dust, rho_metal);
 
-            // Update the fields
+            // Update the fields (d is conserved: dust <-> metal exchange only)
             if (dryrun == false) {
                 dust(i,idx_range.j,idx_range.k) = (gr_float)rho_dust;
                 metal(i,idx_range.j,idx_range.k) = (gr_float)rho_metal;
-                d(i,idx_range.j,idx_range.k) = (gr_float)rho_gas;
             }
         }
     }

@@ -263,7 +263,7 @@ void grackle::impl::cool1d_multi_g(
 
   for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
     if (itmask[i] != MASK_FALSE) {
-      p2d[i] = (my_chemistry->Gamma - 1.) * d(i, idx_range.j, idx_range.k) *
+      p2d[i] = (my_chemistry->Gamma - 1.) * (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) *
                e(i, idx_range.j, idx_range.k);
     }
   }
@@ -281,14 +281,15 @@ void grackle::impl::cool1d_multi_g(
         if (itmask[i] != MASK_FALSE) {
           rhoH[i] = my_chemistry->HydrogenFractionByMass *
                     (d(i, idx_range.j, idx_range.k) -
-                     metal(i, idx_range.j, idx_range.k));
+                     metal(i, idx_range.j, idx_range.k) -
+                     dust(i, idx_range.j, idx_range.k));
         }
       }
     } else {
       for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
         if (itmask[i] != MASK_FALSE) {
           rhoH[i] = my_chemistry->HydrogenFractionByMass *
-                    d(i, idx_range.j, idx_range.k);
+                    (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k));
         }
       }
     }
@@ -345,7 +346,7 @@ void grackle::impl::cool1d_multi_g(
       if (itmask[i] != MASK_FALSE) {
         tgas[i] = std::fmax(p2d[i] * internalu.utem / mmw[i],
                             my_chemistry->TemperatureStart);
-        mmw[i] = d(i, idx_range.j, idx_range.k) / mmw[i];
+        mmw[i] = (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) / mmw[i];
       }
     }
 
@@ -463,7 +464,7 @@ void grackle::impl::cool1d_multi_g(
       logT[i] = std::log10(tgas[i]);
       if (my_chemistry->cmb_temperature_floor == 1)
         logTcmb[i] = std::log10(comp2);
-      logrho[i] = std::log10(d(i, idx_range.j, idx_range.k) * dom * mh);
+      logrho[i] = std::log10((d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * dom * mh);
       if (my_chemistry->primordial_chemistry > 0) {
         logH[i] = std::log10(HI(i, idx_range.j, idx_range.k) * dom);
         logH2[i] = std::log10(HI(i, idx_range.j, idx_range.k) * dom);
@@ -493,7 +494,7 @@ void grackle::impl::cool1d_multi_g(
       lshield_con[i] = std::sqrt(
           (my_chemistry->Gamma * pi_fortran_val * kboltz_grflt * tgas[i]) /
           (GravConst_grflt * mmw[i] * mh_local_var *
-           d(i, idx_range.j, idx_range.k) * dom * mh_local_var));
+           (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * dom * mh_local_var));
     }
   }
 
@@ -785,7 +786,7 @@ void grackle::impl::cool1d_multi_g(
           // RA04.
           if (my_chemistry->h2_optical_depth_approximation == 1) {
             fudge = std::pow(
-                (0.76 * d(i, idx_range.j, idx_range.k) * dom / 8.e9), (-0.45));
+                (0.76 * (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * dom / 8.e9), (-0.45));
             fudge = std::fmin(fudge, 1.);
           } else {
             fudge = 1.;
@@ -855,7 +856,7 @@ void grackle::impl::cool1d_multi_g(
           // RA04.
           if (my_chemistry->h2_optical_depth_approximation == 1) {
             fudge = std::pow(
-                (0.76 * d(i, idx_range.j, idx_range.k) * dom / 8.e9), (-0.45));
+                (0.76 * (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * dom / 8.e9), (-0.45));
             fudge = std::fmin(fudge, 1.);
           } else {
             fudge = 1.;
@@ -959,21 +960,21 @@ void grackle::impl::cool1d_multi_g(
       for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
         if (itmask[i] != MASK_FALSE) {
           // Only calculate if H2I(i) is a substantial fraction
-          if (d(i, idx_range.j, idx_range.k) * dom > 1e10) {
+          if ((d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * dom > 1e10) {
             ciefudge = 1.;
-            tau = std::pow(((d(i, idx_range.j, idx_range.k) / 2e16) * dom),
+            tau = std::pow((((d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) / 2e16) * dom),
                            2.8);  // 2e16 is in units of cm^-3
             tau = std::fmax(tau, 1.e-5);
             ciefudge = std::fmin((1. - std::exp(-tau)) / tau, 1.);
             // Matt's attempt at a second exponentialier cutoff
-            tau = std::pow(((d(i, idx_range.j, idx_range.k) / 2.e18) * dom),
+            tau = std::pow((((d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) / 2.e18) * dom),
                            8.);  // 2e18 is in units of cm^-3
             tau = std::fmax(tau, 1.e-5);
             ciefudge = ciefudge * std::fmin((1.f - std::exp(-tau)) / tau, 1.);
             // ciefudge, which is applied to the continuum, is applied to edot
             edot[i] =
                 ciefudge * (edot[i] - H2I(i, idx_range.j, idx_range.k) *
-                                          (d(i, idx_range.j, idx_range.k) *
+                                          ((d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) *
                                            coolingheating_buf.cieco[i]));
           }
         }
@@ -1167,7 +1168,7 @@ void grackle::impl::cool1d_multi_g(
         } else {
           if (my_chemistry->use_multiple_dust_temperatures == 0) {
             Ldst[i] = -gasgr[i] * (tgas[i] - tdust[i]) *
-                      d(i, idx_range.j, idx_range.k) * rhoH[i];
+                      (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * rhoH[i];
           } else {
             if (my_chemistry->dust_species > 0) {
               Ldst[i] =
@@ -1177,7 +1178,7 @@ void grackle::impl::cool1d_multi_g(
                     gas_grainsp_heatrate.data[OnlyGrainSpLUT::AC_dust][i] *
                         (tgas[i] -
                          grain_temperatures.data[OnlyGrainSpLUT::AC_dust][i])) *
-                  d(i, idx_range.j, idx_range.k) * rhoH[i];
+                  (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * rhoH[i];
             }
 
             if (my_chemistry->dust_species > 1) {
@@ -1207,7 +1208,7 @@ void grackle::impl::cool1d_multi_g(
                    gas_grainsp_heatrate.data[OnlyGrainSpLUT::Al2O3_dust][i] *
                        (tgas[i] - grain_temperatures
                                       .data[OnlyGrainSpLUT::Al2O3_dust][i])) *
-                      d(i, idx_range.j, idx_range.k) * rhoH[i];
+                      (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * rhoH[i];
             }
 
             if (my_chemistry->dust_species > 2) {
@@ -1222,7 +1223,7 @@ void grackle::impl::cool1d_multi_g(
                    gas_grainsp_heatrate.data[OnlyGrainSpLUT::H2O_ice_dust][i] *
                        (tgas[i] - grain_temperatures
                                       .data[OnlyGrainSpLUT::H2O_ice_dust][i])) *
-                      d(i, idx_range.j, idx_range.k) * rhoH[i];
+                      (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * rhoH[i];
             }
           }
         }
@@ -1306,7 +1307,7 @@ void grackle::impl::cool1d_multi_g(
           }
         }
 
-        alpha[i] = alpha[i] + alphad[i] * d(i, idx_range.j, idx_range.k) * dom *
+        alpha[i] = alpha[i] + alphad[i] * (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * dom *
                                   mh_local_var;
       }
     }
@@ -1511,10 +1512,10 @@ void grackle::impl::cool1d_multi_g(
           cool1dmulti_buf.myde[i] =
               cool1dmulti_buf.myde[i] -
               mmw[i] * metal(i, idx_range.j, idx_range.k) /
-                  (d(i, idx_range.j, idx_range.k) * mu_metal);
+                  ((d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * mu_metal);
         }
         cool1dmulti_buf.myde[i] =
-            d(i, idx_range.j, idx_range.k) * cool1dmulti_buf.myde[i] / mmw[i];
+            (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * cool1dmulti_buf.myde[i] / mmw[i];
         cool1dmulti_buf.myde[i] = std::fmax(cool1dmulti_buf.myde[i], 0.);
       }
     }
@@ -1935,7 +1936,7 @@ void grackle::impl::cool1d_multi_g(
     for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
       if (itmask[i] != MASK_FALSE) {
         edot[i] = edot[i] + Mheat(i, idx_range.j, idx_range.k) *
-                                d(i, idx_range.j, idx_range.k) * mh_local_var /
+                                (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) * mh_local_var /
                                 coolunit / dom;
       }
     }

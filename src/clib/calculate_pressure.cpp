@@ -47,7 +47,7 @@ extern "C" int local_calculate_pressure(chemistry_data *my_chemistry,
     for (index = range.start; index <= range.end; index++) {
 
       pressure[index] = ((my_chemistry->Gamma - 1.0) *
-			 my_fields->density[index] *
+			 (my_fields->density[index] - my_fields->dust_density[index]) *
 			 my_fields->internal_energy[index]);
  
       if (pressure[index] < tiny_number)

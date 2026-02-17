@@ -418,7 +418,7 @@ static void set_subcycle_dt_from_chemistry_scheme_(
           my_chemistry, my_rates, dlogtem, logTlininterp_buf,
           kcr_buf.data[CollisionalRxnLUT::k13],
           kcr_buf.data[CollisionalRxnLUT::k22],
-          d(i,j,k), tgas, p2d, edot, i
+          d(i,j,k)-dust(i,j,k), tgas, p2d, edot, i
         );
 
         dtit[i] = std::fmin(dtit[i], 0.1*Heq_div_dHeqdt);
@@ -432,7 +432,7 @@ static void set_subcycle_dt_from_chemistry_scheme_(
       // we may want to handle this case and the next case in a separate
       // function (they determine the timestep using very different logic than
       // in the above case)
-      dtit[i] = grackle::impl::fmin(std::fabs(0.1*e(i,j,k)/edot[i]*d(i,j,k)),
+      dtit[i] = grackle::impl::fmin(std::fabs(0.1*e(i,j,k)/edot[i]*(d(i,j,k)-dust(i,j,k))),
                                     dt-ttot[i],
                                     0.5*dt);
 
@@ -752,6 +752,10 @@ int solve_rate_cool(
                                        my_fields->grid_dimension[0],
                                        my_fields->grid_dimension[1],
                                        my_fields->grid_dimension[2]);
+    grackle::impl::View<gr_float***> dust(my_fields->dust_density,
+                                       my_fields->grid_dimension[0],
+                                       my_fields->grid_dimension[1],
+                                       my_fields->grid_dimension[2]);
 
     // The following for-loop is a flattened loop over every k,j combination.
     // OpenMP divides this loop between all threads. Within the loop, we
@@ -786,7 +790,7 @@ int solve_rate_cool(
       // A useful slice variable since we do this a lot
       // -> we don't need it for primordial_chemistry==0
       for (int i = idx_range.i_start; i < idx_range.i_stop; i++) {
-        spsolvbuf.ddom[i] = d(i,j,k) * dom;
+        spsolvbuf.ddom[i] = (d(i,j,k) - dust(i,j,k)) * dom;
       }
 
       // declare 2 variables (primarily used for subcycling, but also used in
@@ -891,7 +895,7 @@ int solve_rate_cool(
         if (my_chemistry->with_radiative_cooling == 1)  {
           for (int i = idx_range.i_start; i < idx_range.i_stop; i++) {
             if (energy_itmask[i] != MASK_FALSE) {
-              e(i,j,k) = e(i,j,k) + (gr_float)(edot[i]/d(i,j,k)*dtit[i]);
+              e(i,j,k) = e(i,j,k) + (gr_float)(edot[i]/(d(i,j,k)-dust(i,j,k))*dtit[i]);
             }
           }
         }

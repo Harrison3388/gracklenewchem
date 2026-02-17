@@ -58,6 +58,10 @@ void calc_temp_cloudy_g(gr_float* temperature_data_, int imetal,
         my_fields->density, my_fields->grid_dimension[0],
         my_fields->grid_dimension[1], my_fields->grid_dimension[2]);
 
+    grackle::impl::View<gr_float***> dust(
+        my_fields->dust_density, my_fields->grid_dimension[0],
+        my_fields->grid_dimension[1], my_fields->grid_dimension[2]);
+
     grackle::impl::View<gr_float***> metal;
 
     if (imetal == 1) {
@@ -93,10 +97,11 @@ void calc_temp_cloudy_g(gr_float* temperature_data_, int imetal,
 
         if (imetal == 1) {
           gr_float metal_free_density = (d(i, idx_range.j, idx_range.k) -
-                                         metal(i, idx_range.j, idx_range.k));
+                                         metal(i, idx_range.j, idx_range.k) -
+                                         dust(i, idx_range.j, idx_range.k));
           rhoH[i] = f_H * metal_free_density;
         } else {
-          rhoH[i] = f_H * d(i, idx_range.j, idx_range.k);
+          rhoH[i] = f_H * (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k));
         }
       }
 

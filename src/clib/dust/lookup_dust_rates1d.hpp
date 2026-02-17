@@ -197,6 +197,9 @@ inline void lookup_dust_rates1d(
     grackle::impl::View<const gr_float***> d(
         my_fields->density, my_fields->grid_dimension[0],
         my_fields->grid_dimension[1], my_fields->grid_dimension[2]);
+    grackle::impl::View<const gr_float***> dust_view(
+        my_fields->dust_density, my_fields->grid_dimension[0],
+        my_fields->grid_dimension[1], my_fields->grid_dimension[2]);
 
     // the use of SpeciesLUTFieldAdaptor with dynamic indices is suboptimal
     // (it triggers indices). But, I think its ok here for 2 reasons:
@@ -368,7 +371,7 @@ inline void lookup_dust_rates1d(
 
             grain_growth_rates.data[OnlyGrainSpLUT::MgSiO3_dust][i] =
                 kd * grain_sigma_per_gas_mass[i] *
-                d(i, idx_range.j, idx_range.k) * limiting_factor;
+                (d(i, idx_range.j, idx_range.k) - dust_view(i, idx_range.j, idx_range.k)) * limiting_factor;
           }
         }  // idx_range loop
       }  // n_grain_species loop
