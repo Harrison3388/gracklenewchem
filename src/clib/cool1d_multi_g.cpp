@@ -428,7 +428,7 @@ void grackle::impl::cool1d_multi_g(
     for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
       if (itmask[i] != MASK_FALSE) {
         metallicity[i] = metal(i, idx_range.j, idx_range.k) /
-                         d(i, idx_range.j, idx_range.k) /
+                         (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k)) /
                          my_chemistry->SolarMetalFractionByMass;
       }
     }
@@ -1123,7 +1123,7 @@ void grackle::impl::cool1d_multi_g(
         if (itmask[i] != MASK_FALSE) {
           // it may be faster to remove this branching
           dust2gas[i] = dust(i, idx_range.j, idx_range.k) /
-                        (d(i, idx_range.j, idx_range.k));
+                        (d(i, idx_range.j, idx_range.k) - dust(i, idx_range.j, idx_range.k));
         }
       }
     } else {

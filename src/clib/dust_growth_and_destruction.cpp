@@ -148,25 +148,25 @@ void grackle::impl::dust_destruction(
                     tau_dest = 1e20;
                     // dM_shock = 0.0;
                 } else {
-                    tau_dest = rho_gas/(Ms100*sne_this*my_chemistry->dust_destruction_eff) * dt;
+                    tau_dest = rho_gas/(Ms100*(sne_this / (sec_per_year/internalu.tbase1))*my_chemistry->dust_destruction_eff) * dt;
                     dM_shock = std::min(rho_dust/tau_dest, rho_dust/dt);
                 }
             }
 
             // destruction by thermal sputtering
-            double tau_sput = 1.7e8 * sec_per_year / internalu.tbase1
+            if (temp >= 10e5){
+                double tau_sput = 1.7e8 * sec_per_year / internalu.tbase1
                             * (my_chemistry->dust_grainsize/0.1)
                             * (1.0e-27/(dens_proper * rho_gas))
                             * (std::pow((2.0e6/temp),2.5)+1.0);
-
-            if (dM_shock >= rho_dust/dt) {
                 if (dM_shock > rho_dust/dt) {
                     std::cout << "WARNING: dM_shock > M_dust SNe shock destruction, " << sne_this << ", " << tau_dest << std::endl;
+                } else {
+                    dM_shock = dM_shock + rho_dust / tau_sput *3.0;
+                    dM_shock = std::min(dM_shock, rho_dust/dt);
                 }
-            } else {
-                dM_shock = dM_shock + rho_dust / tau_sput *3.0;
-                dM_shock = std::min(dM_shock, rho_dust/dt);
             }
+
             //dM = - rho_dust * dM_shock;
             dM = -dM_shock;
             if (std::isnan(dM)) {

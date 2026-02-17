@@ -173,6 +173,7 @@ inline void step_rate_newton_raphson(
 
   grackle::impl::View<gr_float***> d(my_fields->density, my_fields->grid_dimension[0], my_fields->grid_dimension[1], my_fields->grid_dimension[2]);
   grackle::impl::View<gr_float***> e(my_fields->internal_energy, my_fields->grid_dimension[0], my_fields->grid_dimension[1], my_fields->grid_dimension[2]);
+  grackle::impl::View<gr_float***> dust(my_fields->dust_density, my_fields->grid_dimension[0], my_fields->grid_dimension[1], my_fields->grid_dimension[2]);
 
   // ierror local variable
   //   - this variable is only used internally by this subroutine for
@@ -254,7 +255,7 @@ inline void step_rate_newton_raphson(
       if (my_chemistry->with_radiative_cooling == 1)  {
         if (imp_eng[i] == 0)  {
           e(i,j,k)  = e(i,j,k) +
-               (gr_float)(edot[i]/d(i,j,k)*dtit[i] );
+               (gr_float)(edot[i]/(d(i,j,k)-dust(i,j,k))*dtit[i] );
         }
       }
 

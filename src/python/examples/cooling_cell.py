@@ -112,7 +112,10 @@ def main(args=None):
             cie_cooling=1,
             h2_optical_depth_approximation=1,
             ih2co=1,
-            ipiht=1
+            ipiht=1,
+
+            # SNe dust destruction
+            use_sne_field=1
 
             # HydrogenFractionByMass=0.76,
             # DeuteriumToHydrogenRatio=6.8e-05,
@@ -173,6 +176,11 @@ def main(args=None):
         dust_to_gas_ratio=metal_mass_fraction, # 1:1 metal to dust
         state="ionized",
         converge=True)
+
+    # Set SNe rate: ~0.02 SNII/yr in a MW-like disk volume (~1.3e68 cm³)
+    # V_disk = pi * (15kpc)^2 * 0.6kpc = 424 kpc^3 = 1.25e67 cm ^3
+    sne_rate = 1.6e-69  # per yr per cm^3
+    fc["sne_rate"][:] = sne_rate
 
     # evolve gas at constant density
     data = evolve_constant_density(
