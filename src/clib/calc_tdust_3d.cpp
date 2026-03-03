@@ -154,7 +154,7 @@ void calc_tdust_3d_g(
       // Set itmask to false for metal-poor cells
       if (imetal == 1) {
         for (int i = idx_range.i_start; i < idx_range.i_stop; i++) {
-          if (metal(i,j,k) < 1.e-9 * (d(i,j,k) - dust(i,j,k)))  {
+          if (metal(i,j,k) < 1.e-9 * d(i,j,k))  {
             itmask_metal[i] = MASK_FALSE;
           }
         }
@@ -177,7 +177,7 @@ void calc_tdust_3d_g(
           // Calculate metallicity
 
           if (imetal == 1)  {
-            metallicity[i] = metal(i,j,k) / (d(i,j,k) - dust(i,j,k)) / my_chemistry->SolarMetalFractionByMass;
+            metallicity[i] = metal(i,j,k) / d(i,j,k) / my_chemistry->SolarMetalFractionByMass;
           }
 
           // Calculate dust to gas ratio
@@ -207,8 +207,7 @@ void calc_tdust_3d_g(
           //       endif
 
           if (my_chemistry->use_dust_density_field > 0)  {
-            dust2gas[i] = dust(i,j,k) / (d(i,j,k) - dust(i,j,k));
-            // dust2gas[i] = dust(i,j,k) / (d(i,j,k) - dust(i,j,k));
+            dust2gas[i] = dust(i,j,k) / d(i,j,k);
           } else {
             dust2gas[i] = my_chemistry->local_dust_to_gas_ratio * metallicity[i];
           }

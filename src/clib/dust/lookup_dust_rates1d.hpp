@@ -371,7 +371,7 @@ inline void lookup_dust_rates1d(
 
             grain_growth_rates.data[OnlyGrainSpLUT::MgSiO3_dust][i] =
                 kd * grain_sigma_per_gas_mass[i] *
-                (d(i, idx_range.j, idx_range.k) - dust_view(i, idx_range.j, idx_range.k)) * limiting_factor;
+                d(i, idx_range.j, idx_range.k) * limiting_factor;
           }
         }  // idx_range loop
       }  // n_grain_species loop

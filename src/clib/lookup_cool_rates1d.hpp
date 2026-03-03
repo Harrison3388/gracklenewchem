@@ -370,7 +370,7 @@ inline void model_H2I_dissociation_shielding(
         } else if (my_chemistry->H2_self_shielding == 3) {
           l_H2shield =
               c_ljeans *
-              std::sqrt(tgas1d[i] / ((d(i, idx_range.j, idx_range.k) - dust_view(i, idx_range.j, idx_range.k)) * mmw[i]));
+              std::sqrt(tgas1d[i] / (d(i, idx_range.j, idx_range.k) * mmw[i]));
 
         } else {
           l_H2shield = (gr_float)(0.);
@@ -383,7 +383,7 @@ inline void model_H2I_dissociation_shielding(
 
         double tgas_touse = grackle::impl::clamp(tgas1d[i], 1e2, 8e3);
         double ngas_touse =
-            std::fmin((d(i, idx_range.j, idx_range.k) - dust_view(i, idx_range.j, idx_range.k)) * dom / mmw[i], 1e7);
+            std::fmin(d(i, idx_range.j, idx_range.k) * dom / mmw[i], 1e7);
 
         double aWG2019 = (0.8711 * std::log10(tgas_touse) - 1.928) *
                              std::exp(-0.2856 * std::log10(ngas_touse)) +

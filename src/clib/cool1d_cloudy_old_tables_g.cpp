@@ -27,6 +27,9 @@ void grackle::impl::cool1d_cloudy_old_tables_g(
   grackle::impl::View<gr_float***> d(density, idx_range.i_stop,
                                      my_fields->grid_dimension[1],
                                      my_fields->grid_dimension[2]);
+  grackle::impl::View<gr_float***> dust(my_fields->dust_density, idx_range.i_stop,
+                                        my_fields->grid_dimension[1],
+                                        my_fields->grid_dimension[2]);
   grackle::impl::View<gr_float***> de(e_density, idx_range.i_stop,
                                       my_fields->grid_dimension[1],
                                       my_fields->grid_dimension[2]);

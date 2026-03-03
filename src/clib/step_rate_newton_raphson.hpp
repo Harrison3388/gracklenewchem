@@ -261,7 +261,7 @@ inline void step_rate_newton_raphson(
       if (my_chemistry->with_radiative_cooling == 1)  {
         if (imp_eng[i] == 0)  {
           e(i,j,k)  = e(i,j,k) +
-               (gr_float)(edot[i]/(d(i,j,k)-dust(i,j,k))*dtit[i] );
+               (gr_float)(edot[i]/d(i,j,k)*dtit[i] );
         }
       }
 
@@ -592,7 +592,7 @@ inline void step_rate_newton_raphson(
 
           // to get more accuracy
           for (isp = 1; isp<=(nsp); isp++) {
-            vec[isp-1] = vec[isp-1]/(d(i,j,k)-dust(i,j,k));
+            vec[isp-1] = vec[isp-1]/d(i,j,k);
           }
 
           ierror = f_wrap::gaussj_g(nsp, mtrx.data(), vec.data());
@@ -602,7 +602,7 @@ inline void step_rate_newton_raphson(
 
           // multiply with density again
           for (isp = 1; isp<=(nsp); isp++) {
-            vec[isp-1] = vec[isp-1]*(d(i,j,k)-dust(i,j,k));
+            vec[isp-1] = vec[isp-1]*d(i,j,k);
           }
 
           for (isp = 1; isp<=(nsp); isp++) {

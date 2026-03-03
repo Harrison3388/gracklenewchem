@@ -360,6 +360,10 @@ static void set_subcycle_dt_from_chemistry_scheme_(
                                      my_fields->grid_dimension[0],
                                      my_fields->grid_dimension[1],
                                      my_fields->grid_dimension[2]);
+  grackle::impl::View<gr_float***> dust(my_fields->dust_density,
+                                     my_fields->grid_dimension[0],
+                                     my_fields->grid_dimension[1],
+                                     my_fields->grid_dimension[2]);
 
 
   for (int i = idx_range.i_start; i < idx_range.i_stop; i++) {
