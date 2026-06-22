@@ -87,6 +87,7 @@ add_library(Grackle_Grackle
   auto_general.hpp
 
   # C++ Source (and Private Header Files)
+  api/calculate_cooling_rate_contributions.cpp
   api/calculate_cooling_time.cpp
   api/calculate_dust_temperature.cpp
   api/calculate_gamma.cpp

@@ -59,6 +59,47 @@ _legacy_rate_attrs = frozenset(
     ]
 )
 
+_cooling_rate_contribution_fields = (
+    "total",
+    "residual",
+    "collisional_excitation",
+    "collisional_ionisation",
+    "recombination_cooling",
+    "bremsstrahlung",
+    "h2_line",
+    "h2_cie",
+    "hd",
+    "dust_gas_grain",
+    "photoelectric",
+    "dust_recombination",
+    "photoionization_heating",
+    "cloudy_primordial",
+    "compton",
+    "rt_photoheating",
+    "cloudy_metal",
+    "ci",
+    "cii",
+    "oi",
+    "co",
+    "oh",
+    "h2o",
+    "volumetric_heating",
+    "specific_heating",
+    "chemistry_hi_hei",
+    "chemistry_heii",
+    "chemistry_h2_gas",
+    "chemistry_h2_dust",
+    "chemistry_hi_collisional_ionization",
+    "chemistry_hii_recombination",
+    "chemistry_hei_collisional_ionization",
+    "chemistry_heii_recombination",
+    "chemistry_heii_collisional_ionization",
+    "chemistry_heiii_recombination",
+    "chemistry_h2_hminus_formation",
+    "chemistry_h2_threebody_formation",
+    "chemistry_h2_collisional_dissociation",
+)
+
 cdef class chemistry_data:
     cdef _wrapped_c_chemistry_data data
     cdef c_chemistry_data_storage rates
@@ -605,6 +646,10 @@ cdef gr_float* get_field(object fc, object name) except? NULL:
     cdef gr_float[::1] view = arr
     return <gr_float *> &view[0]
 
+cdef gr_float* get_array_field(object arr) except? NULL:
+    cdef gr_float[::1] view = arr
+    return <gr_float *> &view[0]
+
 cdef c_field_data setup_field_data(object fc, int[::1] buf,
                                    bint include_velocity) except *:
     """
@@ -823,6 +868,91 @@ cdef void _calculate_helper(object fc, object field_name, object func_name,
 def calculate_cooling_time(fc):
     _calculate_helper(fc, "cooling_time", "local_calculate_cooling_time",
                       &c_local_calculate_cooling_time)
+
+def calculate_cooling_rate_contributions(fc, my_dt=0.0):
+    cdef chemistry_data chem_data = fc.chemistry_data
+    cdef c_chemistry_data my_chemistry = chem_data.data.data
+    cdef c_chemistry_data_storage my_rates = chem_data.rates
+    cdef c_code_units my_units = chem_data.units
+    cdef double dt_value = <double> my_dt
+
+    cdef int buf[7]
+    cdef c_field_data my_fields = setup_field_data(fc, buf, True)
+    cdef c_grackle_cooling_rate_contribution_data contribution_fields
+    cdef dict output = {
+        name: np.zeros(fc["density"].shape, dtype=fc["density"].dtype)
+        for name in _cooling_rate_contribution_fields
+    }
+
+    contribution_fields.total = get_array_field(output["total"])
+    contribution_fields.residual = get_array_field(output["residual"])
+    contribution_fields.collisional_excitation = get_array_field(
+        output["collisional_excitation"])
+    contribution_fields.collisional_ionisation = get_array_field(
+        output["collisional_ionisation"])
+    contribution_fields.recombination_cooling = get_array_field(
+        output["recombination_cooling"])
+    contribution_fields.bremsstrahlung = get_array_field(output["bremsstrahlung"])
+    contribution_fields.h2_line = get_array_field(output["h2_line"])
+    contribution_fields.h2_cie = get_array_field(output["h2_cie"])
+    contribution_fields.hd = get_array_field(output["hd"])
+    contribution_fields.dust_gas_grain = get_array_field(
+        output["dust_gas_grain"])
+    contribution_fields.photoelectric = get_array_field(output["photoelectric"])
+    contribution_fields.dust_recombination = get_array_field(
+        output["dust_recombination"])
+    contribution_fields.photoionization_heating = get_array_field(
+        output["photoionization_heating"])
+    contribution_fields.cloudy_primordial = get_array_field(
+        output["cloudy_primordial"])
+    contribution_fields.compton = get_array_field(output["compton"])
+    contribution_fields.rt_photoheating = get_array_field(
+        output["rt_photoheating"])
+    contribution_fields.cloudy_metal = get_array_field(output["cloudy_metal"])
+    contribution_fields.ci = get_array_field(output["ci"])
+    contribution_fields.cii = get_array_field(output["cii"])
+    contribution_fields.oi = get_array_field(output["oi"])
+    contribution_fields.co = get_array_field(output["co"])
+    contribution_fields.oh = get_array_field(output["oh"])
+    contribution_fields.h2o = get_array_field(output["h2o"])
+    contribution_fields.volumetric_heating = get_array_field(
+        output["volumetric_heating"])
+    contribution_fields.specific_heating = get_array_field(
+        output["specific_heating"])
+    contribution_fields.chemistry_hi_hei = get_array_field(
+        output["chemistry_hi_hei"])
+    contribution_fields.chemistry_heii = get_array_field(
+        output["chemistry_heii"])
+    contribution_fields.chemistry_h2_gas = get_array_field(
+        output["chemistry_h2_gas"])
+    contribution_fields.chemistry_h2_dust = get_array_field(
+        output["chemistry_h2_dust"])
+    contribution_fields.chemistry_hi_collisional_ionization = get_array_field(
+        output["chemistry_hi_collisional_ionization"])
+    contribution_fields.chemistry_hii_recombination = get_array_field(
+        output["chemistry_hii_recombination"])
+    contribution_fields.chemistry_hei_collisional_ionization = get_array_field(
+        output["chemistry_hei_collisional_ionization"])
+    contribution_fields.chemistry_heii_recombination = get_array_field(
+        output["chemistry_heii_recombination"])
+    contribution_fields.chemistry_heii_collisional_ionization = get_array_field(
+        output["chemistry_heii_collisional_ionization"])
+    contribution_fields.chemistry_heiii_recombination = get_array_field(
+        output["chemistry_heiii_recombination"])
+    contribution_fields.chemistry_h2_hminus_formation = get_array_field(
+        output["chemistry_h2_hminus_formation"])
+    contribution_fields.chemistry_h2_threebody_formation = get_array_field(
+        output["chemistry_h2_threebody_formation"])
+    contribution_fields.chemistry_h2_collisional_dissociation = get_array_field(
+        output["chemistry_h2_collisional_dissociation"])
+
+    cdef int ret = c_local_calculate_cooling_rate_contributions(
+        &my_chemistry, &my_rates, &my_units, &my_fields, dt_value,
+        &contribution_fields)
+    if (ret == GRACKLE_FAIL_VALUE):
+        raise RuntimeError(
+            "Error occured within local_calculate_cooling_rate_contributions")
+    return output
 
 def calculate_gamma(fc):
     _calculate_helper(fc, "gamma", "local_calculate_gamma",

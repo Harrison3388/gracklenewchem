@@ -18,6 +18,7 @@
 
 #include "grackle.h"             // gr_float
 #include "fortran_func_decls.h"  // gr_mask_int
+#include "cooling_rate_contributions.hpp"
 #include "full_rxn_rate_buf.hpp"
 #include "internal_types.hpp"
 
@@ -57,7 +58,8 @@ void rate_timestep_g(double* dedot, double* HIdot, gr_mask_type anydust,
                      chemistry_data* my_chemistry,
                      grackle_field_data* my_fields, IndexRange idx_range,
                      grackle::impl::ChemHeatingRates chemheatrates_buf,
-                     FullRxnRateBuf rxn_rate_buf);
+                     FullRxnRateBuf rxn_rate_buf,
+                     CoolingContributionScratch* contributions = nullptr);
 
 }  // namespace grackle::impl
 

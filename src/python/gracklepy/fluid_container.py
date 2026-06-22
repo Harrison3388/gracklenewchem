@@ -16,6 +16,7 @@ from unyt import unyt_array
 import warnings
 
 from gracklepy.grackle_wrapper import \
+    calculate_cooling_rate_contributions, \
     calculate_cooling_time, \
     calculate_gamma, \
     calculate_pressure, \
@@ -639,6 +640,9 @@ class FluidContainer(dict):
 
     def calculate_cooling_time(self):
         calculate_cooling_time(self)
+
+    def calculate_cooling_rate_contributions(self, my_dt=0.0):
+        return calculate_cooling_rate_contributions(self, my_dt)
 
     def calculate_gamma(self):
         calculate_gamma(self)

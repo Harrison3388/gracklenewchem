@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "cool1d_multi_g.hpp"
+#include "cooling_rate_contributions.hpp"
 #include "gas_props.hpp"
 #include "grackle.h"
 #include "fortran_func_decls.h"
@@ -44,7 +45,8 @@ void grackle::impl::cool1d_multi_g(
     grackle::impl::GrainSpeciesCollection grain_temperatures,
     grackle::impl::LnTLinInterpBuf logTlininterp_buf,
     grackle::impl::Cool1DMultiScratchBuf cool1dmulti_buf,
-    grackle::impl::CoolHeatScratchBuf coolingheating_buf) {
+    grackle::impl::CoolHeatScratchBuf coolingheating_buf,
+    CoolingContributionScratch* contributions) {
   grackle::impl::View<gr_float***> d(
       my_fields->density, my_fields->grid_dimension[0],
       my_fields->grid_dimension[1], my_fields->grid_dimension[2]);
@@ -175,11 +177,27 @@ void grackle::impl::cool1d_multi_g(
   std::vector<double> LCO(my_fields->grid_dimension[0]);
   std::vector<double> LOH(my_fields->grid_dimension[0]);
   std::vector<double> LH2O(my_fields->grid_dimension[0]);
+  std::vector<double> edot_before(my_fields->grid_dimension[0]);
   std::vector<double> alpha(my_fields->grid_dimension[0]);
   std::vector<double> alphad(my_fields->grid_dimension[0]);
   std::vector<double> lshield_con(my_fields->grid_dimension[0]);
   std::vector<double> tau_con(my_fields->grid_dimension[0]);
   double log_a;
+
+  auto snapshot_edot = [&]() {
+    for (int ii = idx_range.i_start; ii <= idx_range.i_end; ii++) {
+      edot_before[ii] = edot[ii];
+    }
+  };
+
+  auto record_edot_delta = [&](CoolingContributionChannel channel) {
+    for (int ii = idx_range.i_start; ii <= idx_range.i_end; ii++) {
+      if (itmask[ii] != MASK_FALSE) {
+        cooling_contribution_add(contributions, channel, ii,
+                                 edot[ii] - edot_before[ii]);
+      }
+    }
+  };
 
   // buffers of intermediate quantities used within dust-routines (for
   // calculating quantites related to heating/cooling)
@@ -393,53 +411,53 @@ void grackle::impl::cool1d_multi_g(
 
     for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
       if (itmask[i] != MASK_FALSE) {
-        edot[i] = (
-
-            // Collisional excitations
-
+        const double collisional_excitation =
             -coolingheating_buf.ceHI[i] * HI(i, idx_range.j, idx_range.k) *
-                de(i, idx_range.j, idx_range.k)  // ce of HI
-            - coolingheating_buf.ceHeI[i] * HeII(i, idx_range.j, idx_range.k) *
-                  std::pow(de(i, idx_range.j, idx_range.k), 2) * dom /
-                  4.  // ce of HeI
-            - coolingheating_buf.ceHeII[i] * HeII(i, idx_range.j, idx_range.k) *
-                  de(i, idx_range.j, idx_range.k) / 4.  // ce of HeII
-
-            // Collisional ionizations
-
-            - coolingheating_buf.ciHI[i] * HI(i, idx_range.j, idx_range.k) *
-                  de(i, idx_range.j, idx_range.k)  // ci of HI
-            - coolingheating_buf.ciHeI[i] * HeI(i, idx_range.j, idx_range.k) *
-                  de(i, idx_range.j, idx_range.k) / 4.  // ci of HeI
-            - coolingheating_buf.ciHeII[i] * HeII(i, idx_range.j, idx_range.k) *
-                  de(i, idx_range.j, idx_range.k) / 4.  // ci of HeII
-            - coolingheating_buf.ciHeIS[i] * HeII(i, idx_range.j, idx_range.k) *
-                  std::pow(de(i, idx_range.j, idx_range.k), 2) * dom /
-                  4.  // ci of HeIS
-
-            // Recombinations
-
-            - coolingheating_buf.reHII[i] * HII(i, idx_range.j, idx_range.k) *
-                  de(i, idx_range.j, idx_range.k)  // re of HII
-            -
+                de(i, idx_range.j, idx_range.k) -
+            coolingheating_buf.ceHeI[i] * HeII(i, idx_range.j, idx_range.k) *
+                std::pow(de(i, idx_range.j, idx_range.k), 2) * dom / 4. -
+            coolingheating_buf.ceHeII[i] * HeII(i, idx_range.j, idx_range.k) *
+                de(i, idx_range.j, idx_range.k) / 4.;
+        const double collisional_ionisation =
+            -coolingheating_buf.ciHI[i] * HI(i, idx_range.j, idx_range.k) *
+                de(i, idx_range.j, idx_range.k) -
+            coolingheating_buf.ciHeI[i] * HeI(i, idx_range.j, idx_range.k) *
+                de(i, idx_range.j, idx_range.k) / 4. -
+            coolingheating_buf.ciHeII[i] * HeII(i, idx_range.j, idx_range.k) *
+                de(i, idx_range.j, idx_range.k) / 4. -
+            coolingheating_buf.ciHeIS[i] * HeII(i, idx_range.j, idx_range.k) *
+                std::pow(de(i, idx_range.j, idx_range.k), 2) * dom / 4.;
+        const double recombination_cooling =
+            -coolingheating_buf.reHII[i] * HII(i, idx_range.j, idx_range.k) *
+                de(i, idx_range.j, idx_range.k) -
             coolingheating_buf.reHeII1[i] * HeII(i, idx_range.j, idx_range.k) *
-                de(i, idx_range.j, idx_range.k) / 4.  // re of HeII
-            -
+                de(i, idx_range.j, idx_range.k) / 4. -
             coolingheating_buf.reHeII2[i] * HeII(i, idx_range.j, idx_range.k) *
-                de(i, idx_range.j, idx_range.k) / 4.  // re of HeII
-            -
-            coolingheating_buf.reHeIII[i] * HeIII(i, idx_range.j, idx_range.k) *
-                de(i, idx_range.j, idx_range.k) / 4.  // re of HeIII
+                de(i, idx_range.j, idx_range.k) / 4. -
+            coolingheating_buf.reHeIII[i] *
+                HeIII(i, idx_range.j, idx_range.k) *
+                de(i, idx_range.j, idx_range.k) / 4.;
+        const double bremsstrahlung =
+            -coolingheating_buf.brem[i] *
+            (HII(i, idx_range.j, idx_range.k) +
+             HeII(i, idx_range.j, idx_range.k) / 4. +
+             HeIII(i, idx_range.j, idx_range.k)) *
+            de(i, idx_range.j, idx_range.k);
 
-            // Bremsstrahlung
-
-            - coolingheating_buf.brem[i] *
-                  (HII(i, idx_range.j, idx_range.k) +
-                   HeII(i, idx_range.j, idx_range.k) / 4. +
-                   HeIII(i, idx_range.j, idx_range.k)) *
-                  de(i, idx_range.j, idx_range.k)
-
-        );
+        edot[i] = collisional_excitation + collisional_ionisation +
+                  recombination_cooling + bremsstrahlung;
+        cooling_contribution_add(contributions,
+                                 CoolingContributionCollisionalExcitation, i,
+                                 collisional_excitation);
+        cooling_contribution_add(contributions,
+                                 CoolingContributionCollisionalIonisation, i,
+                                 collisional_ionisation);
+        cooling_contribution_add(contributions,
+                                 CoolingContributionRecombinationCooling, i,
+                                 recombination_cooling);
+        cooling_contribution_add(contributions,
+                                 CoolingContributionBremsstrahlung, i,
+                                 bremsstrahlung);
         Lpri[i] = edot[i];
 
         if (edot[i] != edot[i]) {
@@ -500,6 +518,8 @@ void grackle::impl::cool1d_multi_g(
             LH2[i] = 0.e0;
           }
           edot[i] = edot[i] + LH2[i];
+          cooling_contribution_add(contributions, CoolingContributionH2Line, i,
+                                   LH2[i]);
         }
       }
 
@@ -583,9 +603,12 @@ void grackle::impl::cool1d_multi_g(
                      gael[i] * de(i, idx_range.j, idx_range.k);
           // gphdl1 = gphdl(i)/dom
           gphdl1 = h2lte[i] / dom;
-          edot[i] = edot[i] - ih2cox * fudge *
-                                  H2I(i, idx_range.j, idx_range.k) * h2lte[i] /
-                                  (1. + gphdl1 / galdl[i]) / (2. * dom);
+          const double h2_line =
+              -ih2cox * fudge * H2I(i, idx_range.j, idx_range.k) * h2lte[i] /
+              (1. + gphdl1 / galdl[i]) / (2. * dom);
+          edot[i] = edot[i] + h2_line;
+          cooling_contribution_add(contributions, CoolingContributionH2Line, i,
+                                   h2_line);
         }
       }
 
@@ -648,11 +671,13 @@ void grackle::impl::cool1d_multi_g(
           }
           gphdl1 = coolingheating_buf.gphdl[i] /
                    (HI(i, idx_range.j, idx_range.k) * dom);
-          edot[i] = edot[i] - ih2cox * fudge *
-                                  H2I(i, idx_range.j, idx_range.k) *
-                                  coolingheating_buf.gphdl[i] /
-                                  (1. + gphdl1 / coolingheating_buf.gpldl[i]) /
-                                  (2. * dom);
+          const double h2_line =
+              -ih2cox * fudge * H2I(i, idx_range.j, idx_range.k) *
+              coolingheating_buf.gphdl[i] /
+              (1. + gphdl1 / coolingheating_buf.gpldl[i]) / (2. * dom);
+          edot[i] = edot[i] + h2_line;
+          cooling_contribution_add(contributions, CoolingContributionH2Line, i,
+                                   h2_line);
         }
       }
 
@@ -722,17 +747,19 @@ void grackle::impl::cool1d_multi_g(
               ((nH2 + nother) * dom)) fudge = std::fmin(fudge, 1.);
 #endif /* OPTICAL_DEPTH_FUDGE */
 
-          edot[i] =
-              edot[i] -
-              ih2cox * fudge * H2I(i, idx_range.j, idx_range.k) *
-                  (coolingheating_buf.vibh[i] /
-                       (1. + coolingheating_buf.vibh[i] /
-                                 std::fmax(vibl, tiny_fortran_val)) +
-                   coolingheating_buf.roth[i] /
-                       (1. + coolingheating_buf.roth[i] /
-                                 std::fmax(qq * coolingheating_buf.rotl[i],
-                                           tiny_fortran_val))) /
-                  2. / dom;
+          const double h2_line =
+              -ih2cox * fudge * H2I(i, idx_range.j, idx_range.k) *
+              (coolingheating_buf.vibh[i] /
+                   (1. + coolingheating_buf.vibh[i] /
+                             std::fmax(vibl, tiny_fortran_val)) +
+               coolingheating_buf.roth[i] /
+                   (1. + coolingheating_buf.roth[i] /
+                             std::fmax(qq * coolingheating_buf.rotl[i],
+                                       tiny_fortran_val))) /
+              2. / dom;
+          edot[i] = edot[i] + h2_line;
+          cooling_contribution_add(contributions, CoolingContributionH2Line, i,
+                                   h2_line);
         }
       }
     }
@@ -756,10 +783,14 @@ void grackle::impl::cool1d_multi_g(
             tau = std::fmax(tau, 1.e-5);
             ciefudge = ciefudge * std::fmin((1.f - std::exp(-tau)) / tau, 1.);
             // ciefudge, which is applied to the continuum, is applied to edot
-            edot[i] =
-                ciefudge * (edot[i] - H2I(i, idx_range.j, idx_range.k) *
-                                          (d(i, idx_range.j, idx_range.k) *
-                                           coolingheating_buf.cieco[i]));
+            const double cie_cooling =
+                -ciefudge * H2I(i, idx_range.j, idx_range.k) *
+                (d(i, idx_range.j, idx_range.k) *
+                 coolingheating_buf.cieco[i]);
+            edot[i] = ciefudge * edot[i] + cie_cooling;
+            cooling_contribution_scale_active(contributions, i, ciefudge);
+            cooling_contribution_add(contributions, CoolingContributionH2CIE, i,
+                                     cie_cooling);
           }
         }
       }
@@ -775,6 +806,8 @@ void grackle::impl::cool1d_multi_g(
           LCIE[i] = -cieY06[i] *
                     std::pow((H2I(i, idx_range.j, idx_range.k) / 2.e0), 2);
           edot[i] = edot[i] + LCIE[i];
+          cooling_contribution_add(contributions, CoolingContributionH2CIE, i,
+                                   LCIE[i]);
         }
       }
     }
@@ -821,6 +854,8 @@ void grackle::impl::cool1d_multi_g(
             LHD[i] = 0.e0;
           }
           edot[i] = edot[i] + LHD[i];
+          cooling_contribution_add(contributions, CoolingContributionHD, i,
+                                   LHD[i]);
         }
       }
 
@@ -860,10 +895,13 @@ void grackle::impl::cool1d_multi_g(
           hdlte1 = coolingheating_buf.hdlte[i] /
                    (HI(i, idx_range.j, idx_range.k) * dom);
           hdlow1 = std::fmax(coolingheating_buf.hdlow[i], tiny_fortran_val);
-          edot[i] = edot[i] -
-                    HDI(i, idx_range.j, idx_range.k) *
-                        (coolingheating_buf.hdlte[i] / (1. + hdlte1 / hdlow1)) /
-                        (3. * dom);
+          const double hd_cooling =
+              -HDI(i, idx_range.j, idx_range.k) *
+              (coolingheating_buf.hdlte[i] / (1. + hdlte1 / hdlow1)) /
+              (3. * dom);
+          edot[i] = edot[i] + hd_cooling;
+          cooling_contribution_add(contributions, CoolingContributionHD, i,
+                                   hd_cooling);
         }
       }
     }
@@ -892,9 +930,11 @@ void grackle::impl::cool1d_multi_g(
 
   // Calculate dust cooling rate
   if (anydust != MASK_FALSE) {
+    snapshot_edot();
     dust_gas_edot::update_edot_dust_cooling_rate(
         edot, tgas, tdust, grain_temperatures, dust2gas, rhoH, itmask_metal,
         my_chemistry, idx_range, d, gasgr.data(), gas_grainsp_heatrate);
+    record_edot_delta(CoolingContributionDustGasGrain);
   }
 
   // Compute continuum opacity
@@ -987,6 +1027,7 @@ void grackle::impl::cool1d_multi_g(
   // Photoionization heating
 
   if (my_chemistry->primordial_chemistry > 0) {
+    snapshot_edot();
     if (my_chemistry->self_shielding_method == 0) {  // no shielding
       for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
         if (itmask[i] != MASK_FALSE) {
@@ -1143,6 +1184,7 @@ void grackle::impl::cool1d_multi_g(
         }
       }
     }
+    record_edot_delta(CoolingContributionPhotoionizationHeating);
   }
 
   // --- Cloudy primordial cooling and heating ---
@@ -1150,40 +1192,43 @@ void grackle::impl::cool1d_multi_g(
   if (my_chemistry->primordial_chemistry == 0) {
     iZscale = 0;
     mycmbTfloor = 0;
+    snapshot_edot();
     grackle::impl::cool1d_cloudy(rhoH, metallicity, logTlininterp_buf.logtem,
                                  edot, comp2, dom, zr, mycmbTfloor,
                                  my_chemistry->UVbackground, iZscale, itmask,
                                  my_rates->cloudy_primordial, idx_range);
+    record_edot_delta(CoolingContributionCloudyPrimordial);
   }
 
   // Photo-electric heating by UV-irradiated dust
+  snapshot_edot();
   dust_gas_edot::update_edot_photoelectric_heat(
       edot, tgas, dust2gas, rhoH, nelec_times_mH, myisrf.data(), itmask,
       my_chemistry, my_rates->gammah, idx_range, dom_inv);
+  record_edot_delta(CoolingContributionPhotoelectric);
 
   // Electron recombination onto dust grains (eqn. 9 of Wolfire 1995)
   if ((my_chemistry->dust_chemistry > 0) ||
       (my_chemistry->dust_recombination_cooling > 0)) {
+    snapshot_edot();
     dust_gas_edot::update_edot_dust_recombination(
         edot, tgas, dust2gas, rhoH, nelec_times_mH, myisrf.data(), itmask,
         my_chemistry->local_dust_to_gas_ratio, logTlininterp_buf,
         my_rates->regr, idx_range, dom_inv);
+    record_edot_delta(CoolingContributionDustRecombination);
   }
 
   // Compton cooling or heating and X-ray compton heating
 
   for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
     if (itmask[i] != MASK_FALSE) {
-      edot[i] = edot[i]
-
-                // Compton cooling or heating
-
-                - comp1 * (tgas[i] - comp2) * nelec_times_mH[i] * dom_inv
-
-                // X-ray compton heating
-
-                - my_uvb_rates.comp_xray * (tgas[i] - my_uvb_rates.temp_xray) *
-                      nelec_times_mH[i] * dom_inv;
+      const double compton =
+          -comp1 * (tgas[i] - comp2) * nelec_times_mH[i] * dom_inv -
+          my_uvb_rates.comp_xray * (tgas[i] - my_uvb_rates.temp_xray) *
+              nelec_times_mH[i] * dom_inv;
+      edot[i] = edot[i] + compton;
+      cooling_contribution_add(contributions, CoolingContributionCompton, i,
+                               compton);
     }
   }
 
@@ -1192,10 +1237,14 @@ void grackle::impl::cool1d_multi_g(
   if (my_chemistry->use_radiative_transfer == 1) {
     for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
       if (itmask[i] != MASK_FALSE) {
-        edot[i] = edot[i] + (double)(my_chemistry->ipiht) *
-                                photogamma(i, idx_range.j, idx_range.k) /
-                                coolunit * HI(i, idx_range.j, idx_range.k) /
-                                dom;
+        const double rt_photoheating =
+            (double)(my_chemistry->ipiht) *
+            photogamma(i, idx_range.j, idx_range.k) / coolunit *
+            HI(i, idx_range.j, idx_range.k) / dom;
+        edot[i] = edot[i] + rt_photoheating;
+        cooling_contribution_add(contributions,
+                                 CoolingContributionRTPhotoheating, i,
+                                 rt_photoheating);
 
         if (edot[i] != edot[i]) {
           OMP_PRAGMA_CRITICAL {
@@ -1230,16 +1279,20 @@ void grackle::impl::cool1d_multi_g(
 
     if (my_rates->cloudy_data_new == 1) {
       iZscale = 1;
+      snapshot_edot();
       grackle::impl::cool1d_cloudy(
           rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, dom, zr,
           my_chemistry->cmb_temperature_floor, my_chemistry->UVbackground,
           iZscale, itmask_tab.data(), my_rates->cloudy_metal, idx_range);
+      record_edot_delta(CoolingContributionCloudyMetal);
 
     } else {
+      snapshot_edot();
       grackle::impl::cool1d_cloudy_old_tables(
           rhoH, metallicity, logTlininterp_buf.logtem, edot, comp2, dom, zr,
           itmask_tab.data(), my_chemistry, my_rates->cloudy_metal,
           my_fields->density, my_fields->e_density, my_fields, idx_range);
+      record_edot_delta(CoolingContributionCloudyMetal);
     }
 
     if (my_chemistry->metal_chemistry == 1) {
@@ -1285,6 +1338,8 @@ void grackle::impl::cool1d_multi_g(
             LCI[i] = 0.e0;
           }
           edot[i] = edot[i] + LCI[i];
+          cooling_contribution_add(contributions, CoolingContributionCI, i,
+                                   LCI[i]);
 
           // CII
           lognhat = logCII[i] - logdvdr[i];
@@ -1321,6 +1376,8 @@ void grackle::impl::cool1d_multi_g(
             LCII[i] = 0.e0;
           }
           edot[i] = edot[i] + LCII[i];
+          cooling_contribution_add(contributions, CoolingContributionCII, i,
+                                   LCII[i]);
 
           // OI
           lognhat = logOI[i] - logdvdr[i];
@@ -1356,6 +1413,8 @@ void grackle::impl::cool1d_multi_g(
             LOI[i] = 0.e0;
           }
           edot[i] = edot[i] + LOI[i];
+          cooling_contribution_add(contributions, CoolingContributionOI, i,
+                                   LOI[i]);
 
           // Metal molecules rotational cooling
 
@@ -1393,6 +1452,8 @@ void grackle::impl::cool1d_multi_g(
             LCO[i] = 0.e0;
           }
           edot[i] = edot[i] + LCO[i];
+          cooling_contribution_add(contributions, CoolingContributionCO, i,
+                                   LCO[i]);
 
           // OH
           lognhat = logOH[i] - logdvdr[i];
@@ -1428,6 +1489,8 @@ void grackle::impl::cool1d_multi_g(
             LOH[i] = 0.e0;
           }
           edot[i] = edot[i] + LOH[i];
+          cooling_contribution_add(contributions, CoolingContributionOH, i,
+                                   LOH[i]);
 
           // H2O
           lognhat = logH2O[i] - logdvdr[i];
@@ -1463,6 +1526,8 @@ void grackle::impl::cool1d_multi_g(
             LH2O[i] = 0.e0;
           }
           edot[i] = edot[i] + LH2O[i];
+          cooling_contribution_add(contributions, CoolingContributionH2O, i,
+                                   LH2O[i]);
         }
       }
     }
@@ -1473,8 +1538,12 @@ void grackle::impl::cool1d_multi_g(
   if (my_chemistry->use_volumetric_heating_rate == 1) {
     for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
       if (itmask[i] != MASK_FALSE) {
-        edot[i] = edot[i] + Vheat(i, idx_range.j, idx_range.k) / coolunit /
-                                std::pow(dom, 2);
+        const double volumetric_heating =
+            Vheat(i, idx_range.j, idx_range.k) / coolunit / std::pow(dom, 2);
+        edot[i] = edot[i] + volumetric_heating;
+        cooling_contribution_add(contributions,
+                                 CoolingContributionVolumetricHeating, i,
+                                 volumetric_heating);
       }
     }
   }
@@ -1482,9 +1551,13 @@ void grackle::impl::cool1d_multi_g(
   if (my_chemistry->use_specific_heating_rate == 1) {
     for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
       if (itmask[i] != MASK_FALSE) {
-        edot[i] = edot[i] + Mheat(i, idx_range.j, idx_range.k) *
-                                d(i, idx_range.j, idx_range.k) * mh_local_var /
-                                coolunit / dom;
+        const double specific_heating =
+            Mheat(i, idx_range.j, idx_range.k) *
+            d(i, idx_range.j, idx_range.k) * mh_local_var / coolunit / dom;
+        edot[i] = edot[i] + specific_heating;
+        cooling_contribution_add(contributions,
+                                 CoolingContributionSpecificHeating, i,
+                                 specific_heating);
       }
     }
   }
@@ -1494,11 +1567,14 @@ void grackle::impl::cool1d_multi_g(
   for (i = idx_range.i_start; i <= idx_range.i_end; i++) {
     if (itmask[i] != MASK_FALSE) {
       if (tau_con[i] > 1.e0) {
+        double continuum_factor;
         if (tau_con[i] < 1.e2) {
-          edot[i] = edot[i] * std::pow(tau_con[i], (-2.e0));
+          continuum_factor = std::pow(tau_con[i], (-2.e0));
         } else {
-          edot[i] = 0.e0;
+          continuum_factor = 0.e0;
         }
+        edot[i] = edot[i] * continuum_factor;
+        cooling_contribution_scale_active(contributions, i, continuum_factor);
       }
     }
   }

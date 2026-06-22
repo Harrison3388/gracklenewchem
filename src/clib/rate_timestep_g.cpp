@@ -18,6 +18,7 @@
 
 #include "grackle.h"
 #include "fortran_func_decls.h"
+#include "cooling_rate_contributions.hpp"
 #include "support/index_helper.hpp"
 #include "LUT.hpp"
 #include "utils-cpp.hpp"
@@ -32,7 +33,8 @@ void rate_timestep_g(double* dedot, double* HIdot, gr_mask_type anydust,
                      chemistry_data* my_chemistry,
                      grackle_field_data* my_fields, IndexRange idx_range,
                      grackle::impl::ChemHeatingRates chemheatrates_buf,
-                     FullRxnRateBuf rxn_rate_buf) {
+                     FullRxnRateBuf rxn_rate_buf,
+                     CoolingContributionScratch* contributions) {
   // Density fields
 
   grackle::impl::View<gr_float***> de(
@@ -301,25 +303,64 @@ void rate_timestep_g(double* dedot, double* HIdot, gr_mask_type anydust,
 
         // HII, HeII, HeIII recombination heating
 
-        edot[i] = edot[i] -
-                  chunit * (13.6 * (kcol_buf[CollisionalRxnLUT::k1][i] *
-                                        HI(i, idx_range.j, idx_range.k) *
-                                        de(i, idx_range.j, idx_range.k) -
-                                    kcol_buf[CollisionalRxnLUT::k2][i] *
-                                        HII(i, idx_range.j, idx_range.k) *
-                                        de(i, idx_range.j, idx_range.k)) +
-                            24.6 * (kcol_buf[CollisionalRxnLUT::k3][i] *
-                                        HeI(i, idx_range.j, idx_range.k) *
-                                        de(i, idx_range.j, idx_range.k) / 4. -
-                                    kcol_buf[CollisionalRxnLUT::k4][i] *
-                                        HeII(i, idx_range.j, idx_range.k) *
-                                        de(i, idx_range.j, idx_range.k) / 4.) +
-                            79.0 * (kcol_buf[CollisionalRxnLUT::k5][i] *
-                                        HeII(i, idx_range.j, idx_range.k) *
-                                        de(i, idx_range.j, idx_range.k) / 4. -
-                                    kcol_buf[CollisionalRxnLUT::k6][i] *
-                                        HeIII(i, idx_range.j, idx_range.k) *
-                                        de(i, idx_range.j, idx_range.k) / 4.));
+        const double chem_hi_collisional_ionization =
+            -chunit * 13.6 * kcol_buf[CollisionalRxnLUT::k1][i] *
+            HI(i, idx_range.j, idx_range.k) *
+            de(i, idx_range.j, idx_range.k);
+        const double chem_hii_recombination =
+            chunit * 13.6 * kcol_buf[CollisionalRxnLUT::k2][i] *
+            HII(i, idx_range.j, idx_range.k) *
+            de(i, idx_range.j, idx_range.k);
+        const double chem_hei_collisional_ionization =
+            -chunit * 24.6 * kcol_buf[CollisionalRxnLUT::k3][i] *
+            HeI(i, idx_range.j, idx_range.k) *
+            de(i, idx_range.j, idx_range.k) / 4.;
+        const double chem_heii_recombination =
+            chunit * 24.6 * kcol_buf[CollisionalRxnLUT::k4][i] *
+            HeII(i, idx_range.j, idx_range.k) *
+            de(i, idx_range.j, idx_range.k) / 4.;
+        const double chem_heii_collisional_ionization =
+            -chunit * 79.0 * kcol_buf[CollisionalRxnLUT::k5][i] *
+            HeII(i, idx_range.j, idx_range.k) *
+            de(i, idx_range.j, idx_range.k) / 4.;
+        const double chem_heiii_recombination =
+            chunit * 79.0 * kcol_buf[CollisionalRxnLUT::k6][i] *
+            HeIII(i, idx_range.j, idx_range.k) *
+            de(i, idx_range.j, idx_range.k) / 4.;
+        const double chem_hi_hei =
+            chem_hi_collisional_ionization + chem_hii_recombination +
+            chem_hei_collisional_ionization + chem_heii_recombination;
+        const double chem_heii =
+            chem_heii_collisional_ionization + chem_heiii_recombination;
+
+        edot[i] = edot[i] + chem_hi_hei + chem_heii;
+        cooling_contribution_add(contributions,
+                                 CoolingContributionChemistryHIHeI, i,
+                                 chem_hi_hei);
+        cooling_contribution_add(contributions,
+                                 CoolingContributionChemistryHeII, i,
+                                 chem_heii);
+        cooling_contribution_add(
+            contributions,
+            CoolingContributionChemistryHICollisionalIonization, i,
+            chem_hi_collisional_ionization);
+        cooling_contribution_add(contributions,
+                                 CoolingContributionChemistryHIIRecombination,
+                                 i, chem_hii_recombination);
+        cooling_contribution_add(
+            contributions,
+            CoolingContributionChemistryHeICollisionalIonization, i,
+            chem_hei_collisional_ionization);
+        cooling_contribution_add(contributions,
+                                 CoolingContributionChemistryHeIIRecombination,
+                                 i, chem_heii_recombination);
+        cooling_contribution_add(
+            contributions,
+            CoolingContributionChemistryHeIICollisionalIonization, i,
+            chem_heii_collisional_ionization);
+        cooling_contribution_add(contributions,
+                                 CoolingContributionChemistryHeIIIRecombination,
+                                 i, chem_heiii_recombination);
 
         // H2 formation heating
 
@@ -335,14 +376,23 @@ void rate_timestep_g(double* dedot, double* HIdot, gr_mask_type anydust,
         // We only want to apply this if the formation dominates, but we
         // need to apply it outside the delta calculation.
 
-        H2delta[i] = HI(i, idx_range.j, idx_range.k) *
-                     ((3.53 * kcol_buf[CollisionalRxnLUT::k8][i] *
-                           HM(i, idx_range.j, idx_range.k) +
-                       4.48 * kcol_buf[CollisionalRxnLUT::k22][i] *
-                           std::pow(HI(i, idx_range.j, idx_range.k), 2.)) *
-                          h2heatfac[i] -
-                      4.48 * kcol_buf[CollisionalRxnLUT::k13][i] *
-                          H2I(i, idx_range.j, idx_range.k) / 2.);
+        const double chem_h2_hminus_formation =
+            HI(i, idx_range.j, idx_range.k) *
+            3.53 * kcol_buf[CollisionalRxnLUT::k8][i] *
+            HM(i, idx_range.j, idx_range.k) * h2heatfac[i];
+        const double chem_h2_threebody_formation =
+            HI(i, idx_range.j, idx_range.k) *
+            4.48 * kcol_buf[CollisionalRxnLUT::k22][i] *
+            std::pow(HI(i, idx_range.j, idx_range.k), 2.) * h2heatfac[i];
+        const double chem_h2_collisional_dissociation =
+            -HI(i, idx_range.j, idx_range.k) *
+            4.48 * kcol_buf[CollisionalRxnLUT::k13][i] *
+            H2I(i, idx_range.j, idx_range.k) / 2.;
+        double chem_h2_dust = 0.;
+
+        H2delta[i] = chem_h2_hminus_formation +
+                     chem_h2_threebody_formation +
+                     chem_h2_collisional_dissociation;
         // ! corrected by GC 202002
 
         // !          if(H2delta(i).gt.0._DKIND) then
@@ -352,9 +402,10 @@ void rate_timestep_g(double* dedot, double* HIdot, gr_mask_type anydust,
         if (anydust != MASK_FALSE) {
           if (metal(i, idx_range.j, idx_range.k) >
               1.e-9 * d(i, idx_range.j, idx_range.k)) {
-            H2delta[i] = H2delta[i] + h2dust[i] *
-                                          HI(i, idx_range.j, idx_range.k) *
-                                          rhoH[i] * (0.2 + 4.2 * h2heatfac[i]);
+            chem_h2_dust = h2dust[i] *
+                            HI(i, idx_range.j, idx_range.k) * rhoH[i] *
+                            (0.2 + 4.2 * h2heatfac[i]);
+            H2delta[i] = H2delta[i] + chem_h2_dust;
           }
         }
 
@@ -366,6 +417,31 @@ void rate_timestep_g(double* dedot, double* HIdot, gr_mask_type anydust,
         //        atten = min((1.-exp(-tau))/tau,1._DKIND)
         atten = 1.;
         edot[i] = edot[i] + chunit * H2delta[i] * atten;
+        const double h2_hminus_term =
+            chunit * chem_h2_hminus_formation * atten;
+        const double h2_threebody_term =
+            chunit * chem_h2_threebody_formation * atten;
+        const double h2_dissociation_term =
+            chunit * chem_h2_collisional_dissociation * atten;
+        const double h2_dust_term = chunit * chem_h2_dust * atten;
+        const double chem_h2_gas =
+            h2_hminus_term + h2_threebody_term + h2_dissociation_term;
+        cooling_contribution_add(contributions,
+                                 CoolingContributionChemistryH2Gas, i,
+                                 chem_h2_gas);
+        cooling_contribution_add(contributions,
+                                 CoolingContributionChemistryH2Dust, i,
+                                 h2_dust_term);
+        cooling_contribution_add(
+            contributions, CoolingContributionChemistryH2HminusFormation, i,
+            h2_hminus_term);
+        cooling_contribution_add(
+            contributions, CoolingContributionChemistryH2ThreeBodyFormation, i,
+            h2_threebody_term);
+        cooling_contribution_add(
+            contributions,
+            CoolingContributionChemistryH2CollisionalDissociation, i,
+            h2_dissociation_term);
         //      &       + H2I(i,j,k)*( k21(i) * HI(i,j,k)**2.0_DKIND
         //      &                    - k23(i) * H2I(i,j,k))
         // H * (k22 * H^2 - k13 * H_2) + H_2 * (k21 * H^2 - k23 * H_2) */

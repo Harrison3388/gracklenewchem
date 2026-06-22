@@ -610,9 +610,11 @@ void grackle::impl::dust_destruction_species(
           }
         }
 
-        double tau_sput = tau_sput_ref * sput_struct;
-        if (tau_sput > 0.0 && std::isfinite(tau_sput)) {
-          inv_tau_loss += 1.0 / tau_sput;
+        if (temp >= 1.0e5) {
+          double tau_sput = tau_sput_ref * sput_struct;
+          if (tau_sput > 0.0 && std::isfinite(tau_sput)) {
+            inv_tau_loss += 1.0 / tau_sput;
+          }
         }
 
         double dM = -e_fold_loss_rate(rho_dust, dt, inv_tau_loss);

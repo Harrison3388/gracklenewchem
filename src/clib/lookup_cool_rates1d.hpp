@@ -47,12 +47,12 @@ namespace grackle::impl {
 /// The impetus for factoring out this logic is that it existed behind an ifdef
 /// statement that was not being used. By placing the logic in a function, we
 /// can confirm that the logic is valid C++ even if the logic isn't used.
-void secondary_ionization_adjustments(IndexRange idx_range,
-                                      const gr_mask_type* itmask,
-                                      grackle_field_data* my_fields,
-                                      photo_rate_storage my_uvb_rates,
-                                      InternalGrUnits internalu,
-                                      double* const* kph_buf) {
+inline void secondary_ionization_adjustments(IndexRange idx_range,
+                                             const gr_mask_type* itmask,
+                                             grackle_field_data* my_fields,
+                                             photo_rate_storage my_uvb_rates,
+                                             InternalGrUnits internalu,
+                                             double* const* kph_buf) {
   // construct views of HI_density & HII_density fields
   grackle::impl::View<gr_float***> HI(
       my_fields->HI_density, my_fields->grid_dimension[0],

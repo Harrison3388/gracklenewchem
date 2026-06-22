@@ -18,6 +18,7 @@
 
 #include "grackle.h"                 // gr_float
 #include "fortran_func_decls.h"      // gr_mask_int
+#include "cooling_rate_contributions.hpp"
 #include "internal_units.hpp"        // InternalGrUnits
 #include "internal_types.hpp"        // GrainSpeciesCollection
 #include "lnT_prep.hpp"              // LnTLinInterpBuf
@@ -89,7 +90,8 @@ void cool1d_multi_g(int imetal, double* edot, const double* tgas,
                     grackle::impl::GrainSpeciesCollection grain_temperatures,
                     grackle::impl::LnTLinInterpBuf logTlininterp_buf,
                     grackle::impl::Cool1DMultiScratchBuf cool1dmulti_buf,
-                    grackle::impl::CoolHeatScratchBuf coolingheating_buf);
+                    grackle::impl::CoolHeatScratchBuf coolingheating_buf,
+                    CoolingContributionScratch* contributions = nullptr);
 
 };  // namespace grackle::impl
 

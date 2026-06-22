@@ -96,6 +96,55 @@ int local_calculate_cooling_time(chemistry_data *my_chemistry,
                                  grackle_field_data *my_fields,
                                  gr_float *cooling_time);
 
+typedef struct {
+  gr_float *total;
+  gr_float *residual;
+  gr_float *collisional_excitation;
+  gr_float *collisional_ionisation;
+  gr_float *recombination_cooling;
+  gr_float *bremsstrahlung;
+  gr_float *h2_line;
+  gr_float *h2_cie;
+  gr_float *hd;
+  gr_float *dust_gas_grain;
+  gr_float *photoelectric;
+  gr_float *dust_recombination;
+  gr_float *photoionization_heating;
+  gr_float *cloudy_primordial;
+  gr_float *compton;
+  gr_float *rt_photoheating;
+  gr_float *cloudy_metal;
+  gr_float *ci;
+  gr_float *cii;
+  gr_float *oi;
+  gr_float *co;
+  gr_float *oh;
+  gr_float *h2o;
+  gr_float *volumetric_heating;
+  gr_float *specific_heating;
+  gr_float *chemistry_hi_hei;
+  gr_float *chemistry_heii;
+  gr_float *chemistry_h2_gas;
+  gr_float *chemistry_h2_dust;
+  gr_float *chemistry_hi_collisional_ionization;
+  gr_float *chemistry_hii_recombination;
+  gr_float *chemistry_hei_collisional_ionization;
+  gr_float *chemistry_heii_recombination;
+  gr_float *chemistry_heii_collisional_ionization;
+  gr_float *chemistry_heiii_recombination;
+  gr_float *chemistry_h2_hminus_formation;
+  gr_float *chemistry_h2_threebody_formation;
+  gr_float *chemistry_h2_collisional_dissociation;
+} grackle_cooling_rate_contribution_data;
+
+int local_calculate_cooling_rate_contributions(
+    chemistry_data *my_chemistry,
+    chemistry_data_storage *my_rates,
+    code_units *my_units,
+    grackle_field_data *my_fields,
+    double dt_value,
+    grackle_cooling_rate_contribution_data *contributions);
+
 int calculate_dust_temperature(code_units *my_units,
                                grackle_field_data *my_fields,
                                gr_float *dust_temperature);
