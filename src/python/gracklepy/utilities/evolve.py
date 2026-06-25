@@ -147,6 +147,57 @@ def evolve_constant_density(fc, final_temperature=None,
         data[field] = np.squeeze(np.array(data[field]))
     return fc.finalize_data(data=data)
 
+def evolve_constant_pressure(fc, final_temperature=None,
+                             final_time=None, safety_factor=0.01):
+    """
+    Evolve a fluid container at constant (thermal) pressure.
+    """
+    my_chemistry = fc.chemistry_data
+
+    if final_temperature is None and final_time is None:
+        raise RuntimeError("Must specify either final_temperature " +
+                           "or final_time.")
+
+    # Hold the pressure fixed at the container's initial value.
+    fc.calculate_pressure()
+    target_pressure = fc["pressure"][0]
+
+    data = defaultdict(list)
+    current_time = 0.0
+    while True:
+        fc.calculate_temperature()
+        ini_temp = fc["temperature"][0]
+        if final_temperature is not None and fc["temperature"][0] <= final_temperature:
+            break
+        if final_time is not None and current_time >= final_time:
+            break
+
+        # Record the current (constant-pressure) state before advancing.
+        add_to_data(fc, data, extra={"time": current_time})
+
+        fc.calculate_cooling_time()
+        dt = safety_factor * np.abs(fc["cooling_time"][0])
+
+        print("Evolve constant pressure - t: %e yr, rho: %e g/cm^3, T: %e K." %
+              (current_time * my_chemistry.time_units / sec_per_year,
+               fc["density"][0] * my_chemistry.density_units,
+               fc["temperature"][0]))
+
+        # Cool at fixed density over dt.
+        fc.solve_chemistry(dt)
+        fc.calculate_temperature()
+        density_ratio = ini_temp / fc["temperature"][0]
+        for field in fc.density_fields:
+            fc[field] *= density_ratio
+        # fc["internal_energy"] *= np.power(
+        #     pressure_ratio, (my_chemistry.Gamma - 1.0) / my_chemistry.Gamma)
+
+        current_time += dt
+
+    for field in data:
+        data[field] = np.squeeze(np.array(data[field]))
+    return fc.finalize_data(data=data)
+
 def add_to_data(fc, data, extra=None):
     """
     Add current fluid container values to the data structure.

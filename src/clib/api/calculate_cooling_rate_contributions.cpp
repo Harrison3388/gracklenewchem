@@ -39,47 +39,15 @@ using grackle::impl::CoolingContributionResidual;
 using grackle::impl::CoolingContributionScratch;
 using grackle::impl::CoolingContributionTotal;
 
+// Built from the same GRACKLE_COOLING_CONTRIBUTION_CHANNELS X-macro as the
+// enum, so the pointer at index CoolingContribution<X> is always data-><X's
+// field>; the two cannot fall out of order.
 std::array<gr_float*, CoolingContributionFieldCount>
 contribution_output_fields(grackle_cooling_rate_contribution_data* data) {
   return {
-      data->total,
-      data->residual,
-      data->collisional_excitation,
-      data->collisional_ionisation,
-      data->recombination_cooling,
-      data->bremsstrahlung,
-      data->h2_line,
-      data->h2_cie,
-      data->hd,
-      data->dust_gas_grain,
-      data->photoelectric,
-      data->dust_recombination,
-      data->photoionization_heating,
-      data->cloudy_primordial,
-      data->compton,
-      data->rt_photoheating,
-      data->cloudy_metal,
-      data->ci,
-      data->cii,
-      data->oi,
-      data->co,
-      data->oh,
-      data->h2o,
-      data->volumetric_heating,
-      data->specific_heating,
-      data->chemistry_hi_hei,
-      data->chemistry_heii,
-      data->chemistry_h2_gas,
-      data->chemistry_h2_dust,
-      data->chemistry_hi_collisional_ionization,
-      data->chemistry_hii_recombination,
-      data->chemistry_hei_collisional_ionization,
-      data->chemistry_heii_recombination,
-      data->chemistry_heii_collisional_ionization,
-      data->chemistry_heiii_recombination,
-      data->chemistry_h2_hminus_formation,
-      data->chemistry_h2_threebody_formation,
-      data->chemistry_h2_collisional_dissociation,
+#define GRACKLE_COOLING_CONTRIBUTION_PTR(enum_suffix, field) data->field,
+      GRACKLE_COOLING_CONTRIBUTION_CHANNELS(GRACKLE_COOLING_CONTRIBUTION_PTR)
+#undef GRACKLE_COOLING_CONTRIBUTION_PTR
   };
 }
 

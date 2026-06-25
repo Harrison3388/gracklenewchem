@@ -884,67 +884,20 @@ def calculate_cooling_rate_contributions(fc, my_dt=0.0):
         for name in _cooling_rate_contribution_fields
     }
 
-    contribution_fields.total = get_array_field(output["total"])
-    contribution_fields.residual = get_array_field(output["residual"])
-    contribution_fields.collisional_excitation = get_array_field(
-        output["collisional_excitation"])
-    contribution_fields.collisional_ionisation = get_array_field(
-        output["collisional_ionisation"])
-    contribution_fields.recombination_cooling = get_array_field(
-        output["recombination_cooling"])
-    contribution_fields.bremsstrahlung = get_array_field(output["bremsstrahlung"])
-    contribution_fields.h2_line = get_array_field(output["h2_line"])
-    contribution_fields.h2_cie = get_array_field(output["h2_cie"])
-    contribution_fields.hd = get_array_field(output["hd"])
-    contribution_fields.dust_gas_grain = get_array_field(
-        output["dust_gas_grain"])
-    contribution_fields.photoelectric = get_array_field(output["photoelectric"])
-    contribution_fields.dust_recombination = get_array_field(
-        output["dust_recombination"])
-    contribution_fields.photoionization_heating = get_array_field(
-        output["photoionization_heating"])
-    contribution_fields.cloudy_primordial = get_array_field(
-        output["cloudy_primordial"])
-    contribution_fields.compton = get_array_field(output["compton"])
-    contribution_fields.rt_photoheating = get_array_field(
-        output["rt_photoheating"])
-    contribution_fields.cloudy_metal = get_array_field(output["cloudy_metal"])
-    contribution_fields.ci = get_array_field(output["ci"])
-    contribution_fields.cii = get_array_field(output["cii"])
-    contribution_fields.oi = get_array_field(output["oi"])
-    contribution_fields.co = get_array_field(output["co"])
-    contribution_fields.oh = get_array_field(output["oh"])
-    contribution_fields.h2o = get_array_field(output["h2o"])
-    contribution_fields.volumetric_heating = get_array_field(
-        output["volumetric_heating"])
-    contribution_fields.specific_heating = get_array_field(
-        output["specific_heating"])
-    contribution_fields.chemistry_hi_hei = get_array_field(
-        output["chemistry_hi_hei"])
-    contribution_fields.chemistry_heii = get_array_field(
-        output["chemistry_heii"])
-    contribution_fields.chemistry_h2_gas = get_array_field(
-        output["chemistry_h2_gas"])
-    contribution_fields.chemistry_h2_dust = get_array_field(
-        output["chemistry_h2_dust"])
-    contribution_fields.chemistry_hi_collisional_ionization = get_array_field(
-        output["chemistry_hi_collisional_ionization"])
-    contribution_fields.chemistry_hii_recombination = get_array_field(
-        output["chemistry_hii_recombination"])
-    contribution_fields.chemistry_hei_collisional_ionization = get_array_field(
-        output["chemistry_hei_collisional_ionization"])
-    contribution_fields.chemistry_heii_recombination = get_array_field(
-        output["chemistry_heii_recombination"])
-    contribution_fields.chemistry_heii_collisional_ionization = get_array_field(
-        output["chemistry_heii_collisional_ionization"])
-    contribution_fields.chemistry_heiii_recombination = get_array_field(
-        output["chemistry_heiii_recombination"])
-    contribution_fields.chemistry_h2_hminus_formation = get_array_field(
-        output["chemistry_h2_hminus_formation"])
-    contribution_fields.chemistry_h2_threebody_formation = get_array_field(
-        output["chemistry_h2_threebody_formation"])
-    contribution_fields.chemistry_h2_collisional_dissociation = get_array_field(
-        output["chemistry_h2_collisional_dissociation"])
+    # grackle_cooling_rate_contribution_data is a flat block of identical
+    # gr_float* members, so it can be filled as an array indexed in the same
+    # order as _cooling_rate_contribution_fields (which mirrors the C struct /
+    # channel-enum order). The size check fails loudly if the tuple ever drifts
+    # out of sync with the C struct.
+    if sizeof(contribution_fields) != \
+            len(_cooling_rate_contribution_fields) * sizeof(gr_float*):
+        raise RuntimeError(
+            "cooling-rate contribution field table is out of sync with the C "
+            "grackle_cooling_rate_contribution_data struct")
+    cdef gr_float** field_ptrs = <gr_float**> &contribution_fields
+    cdef int field_index
+    for field_index, name in enumerate(_cooling_rate_contribution_fields):
+        field_ptrs[field_index] = get_array_field(output[name])
 
     cdef int ret = c_local_calculate_cooling_rate_contributions(
         &my_chemistry, &my_rates, &my_units, &my_fields, dt_value,

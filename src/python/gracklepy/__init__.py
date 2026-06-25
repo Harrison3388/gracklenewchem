@@ -29,6 +29,7 @@ from .utilities.convenience import (
 
 from .utilities.evolve import (
     evolve_constant_density as evolve_constant_density,
+    evolve_constant_pressure as evolve_constant_pressure,
     evolve_freefall as evolve_freefall
 )
 

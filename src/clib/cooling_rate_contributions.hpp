@@ -19,46 +19,17 @@
 
 namespace grackle::impl {
 
+// The channel enum is generated from the GRACKLE_COOLING_CONTRIBUTION_CHANNELS
+// X-macro defined in grackle.h, so the enum values stay in lock-step with the
+// grackle_cooling_rate_contribution_data struct and the output-field table.
+// Total is value 0 and Residual is value 1 (relied on below); every channel
+// after them is "primitive" unless excluded by cooling_contribution_is_primitive.
 enum CoolingContributionChannel {
-  CoolingContributionTotal = 0,
-  CoolingContributionResidual = 1,
-  CoolingContributionCollisionalExcitation = 2,
-  CoolingContributionCollisionalIonisation = 3,
-  CoolingContributionRecombinationCooling = 4,
-  CoolingContributionBremsstrahlung = 5,
-  CoolingContributionH2Line = 6,
-  CoolingContributionH2CIE = 7,
-  CoolingContributionHD = 8,
-  CoolingContributionDustGasGrain = 9,
-  CoolingContributionPhotoelectric = 10,
-  CoolingContributionDustRecombination = 11,
-  CoolingContributionPhotoionizationHeating = 12,
-  CoolingContributionCloudyPrimordial = 13,
-  CoolingContributionCompton = 14,
-  CoolingContributionRTPhotoheating = 15,
-  CoolingContributionCloudyMetal = 16,
-  CoolingContributionCI = 17,
-  CoolingContributionCII = 18,
-  CoolingContributionOI = 19,
-  CoolingContributionCO = 20,
-  CoolingContributionOH = 21,
-  CoolingContributionH2O = 22,
-  CoolingContributionVolumetricHeating = 23,
-  CoolingContributionSpecificHeating = 24,
-  CoolingContributionChemistryHIHeI = 25,
-  CoolingContributionChemistryHeII = 26,
-  CoolingContributionChemistryH2Gas = 27,
-  CoolingContributionChemistryH2Dust = 28,
-  CoolingContributionChemistryHICollisionalIonization = 29,
-  CoolingContributionChemistryHIIRecombination = 30,
-  CoolingContributionChemistryHeICollisionalIonization = 31,
-  CoolingContributionChemistryHeIIRecombination = 32,
-  CoolingContributionChemistryHeIICollisionalIonization = 33,
-  CoolingContributionChemistryHeIIIRecombination = 34,
-  CoolingContributionChemistryH2HminusFormation = 35,
-  CoolingContributionChemistryH2ThreeBodyFormation = 36,
-  CoolingContributionChemistryH2CollisionalDissociation = 37,
-  CoolingContributionFieldCount = 38
+#define GRACKLE_COOLING_CONTRIBUTION_ENUM(enum_suffix, field) \
+  CoolingContribution##enum_suffix,
+  GRACKLE_COOLING_CONTRIBUTION_CHANNELS(GRACKLE_COOLING_CONTRIBUTION_ENUM)
+#undef GRACKLE_COOLING_CONTRIBUTION_ENUM
+  CoolingContributionFieldCount
 };
 
 struct CoolingContributionScratch {

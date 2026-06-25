@@ -217,45 +217,12 @@ cdef extern from "grackle.h":
       const char* branch;
       const char* revision;
 
+    # Opaque to Cython: the real layout (a flat block of gr_float* members) is
+    # generated from the GRACKLE_COOLING_CONTRIBUTION_CHANNELS X-macro in
+    # grackle.h. The wrapper fills it as a pointer array and only relies on its
+    # size, so the field list does not need to be duplicated here.
     ctypedef struct c_grackle_cooling_rate_contribution_data "grackle_cooling_rate_contribution_data":
-      gr_float *total;
-      gr_float *residual;
-      gr_float *collisional_excitation;
-      gr_float *collisional_ionisation;
-      gr_float *recombination_cooling;
-      gr_float *bremsstrahlung;
-      gr_float *h2_line;
-      gr_float *h2_cie;
-      gr_float *hd;
-      gr_float *dust_gas_grain;
-      gr_float *photoelectric;
-      gr_float *dust_recombination;
-      gr_float *photoionization_heating;
-      gr_float *cloudy_primordial;
-      gr_float *compton;
-      gr_float *rt_photoheating;
-      gr_float *cloudy_metal;
-      gr_float *ci;
-      gr_float *cii;
-      gr_float *oi;
-      gr_float *co;
-      gr_float *oh;
-      gr_float *h2o;
-      gr_float *volumetric_heating;
-      gr_float *specific_heating;
-      gr_float *chemistry_hi_hei;
-      gr_float *chemistry_heii;
-      gr_float *chemistry_h2_gas;
-      gr_float *chemistry_h2_dust;
-      gr_float *chemistry_hi_collisional_ionization;
-      gr_float *chemistry_hii_recombination;
-      gr_float *chemistry_hei_collisional_ionization;
-      gr_float *chemistry_heii_recombination;
-      gr_float *chemistry_heii_collisional_ionization;
-      gr_float *chemistry_heiii_recombination;
-      gr_float *chemistry_h2_hminus_formation;
-      gr_float *chemistry_h2_threebody_formation;
-      gr_float *chemistry_h2_collisional_dissociation;
+      pass
 
 
     # defined in "grackle.h"

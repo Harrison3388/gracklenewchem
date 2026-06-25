@@ -96,45 +96,61 @@ int local_calculate_cooling_time(chemistry_data *my_chemistry,
                                  grackle_field_data *my_fields,
                                  gr_float *cooling_time);
 
+// X-macro: the single source of truth for the additive cooling/heating
+// contribution channels. Each entry is GR_F(EnumSuffix, struct_field_name).
+// The struct below, the C++ CoolingContributionChannel enum (in
+// cooling_rate_contributions.hpp), and the output-field pointer table (in
+// api/calculate_cooling_rate_contributions.cpp) are all generated from this
+// list so their ordering can never drift apart. To add a channel, add one
+// line here (and one record site in the cooling code).
+#define GRACKLE_COOLING_CONTRIBUTION_CHANNELS(GR_F)                            \
+  GR_F(Total, total)                                                          \
+  GR_F(Residual, residual)                                                    \
+  GR_F(CollisionalExcitation, collisional_excitation)                        \
+  GR_F(CollisionalIonisation, collisional_ionisation)                        \
+  GR_F(RecombinationCooling, recombination_cooling)                          \
+  GR_F(Bremsstrahlung, bremsstrahlung)                                       \
+  GR_F(H2Line, h2_line)                                                      \
+  GR_F(H2CIE, h2_cie)                                                        \
+  GR_F(HD, hd)                                                               \
+  GR_F(DustGasGrain, dust_gas_grain)                                         \
+  GR_F(Photoelectric, photoelectric)                                        \
+  GR_F(DustRecombination, dust_recombination)                                \
+  GR_F(PhotoionizationHeating, photoionization_heating)                      \
+  GR_F(CloudyPrimordial, cloudy_primordial)                                  \
+  GR_F(Compton, compton)                                                     \
+  GR_F(RTPhotoheating, rt_photoheating)                                      \
+  GR_F(CloudyMetal, cloudy_metal)                                            \
+  GR_F(CI, ci)                                                               \
+  GR_F(CII, cii)                                                             \
+  GR_F(OI, oi)                                                               \
+  GR_F(CO, co)                                                               \
+  GR_F(OH, oh)                                                               \
+  GR_F(H2O, h2o)                                                             \
+  GR_F(VolumetricHeating, volumetric_heating)                                \
+  GR_F(SpecificHeating, specific_heating)                                    \
+  GR_F(ChemistryHIHeI, chemistry_hi_hei)                                     \
+  GR_F(ChemistryHeII, chemistry_heii)                                        \
+  GR_F(ChemistryH2Gas, chemistry_h2_gas)                                     \
+  GR_F(ChemistryH2Dust, chemistry_h2_dust)                                   \
+  GR_F(ChemistryHICollisionalIonization,                                     \
+       chemistry_hi_collisional_ionization)                                  \
+  GR_F(ChemistryHIIRecombination, chemistry_hii_recombination)               \
+  GR_F(ChemistryHeICollisionalIonization,                                    \
+       chemistry_hei_collisional_ionization)                                 \
+  GR_F(ChemistryHeIIRecombination, chemistry_heii_recombination)             \
+  GR_F(ChemistryHeIICollisionalIonization,                                   \
+       chemistry_heii_collisional_ionization)                                \
+  GR_F(ChemistryHeIIIRecombination, chemistry_heiii_recombination)           \
+  GR_F(ChemistryH2HminusFormation, chemistry_h2_hminus_formation)            \
+  GR_F(ChemistryH2ThreeBodyFormation, chemistry_h2_threebody_formation)      \
+  GR_F(ChemistryH2CollisionalDissociation,                                   \
+       chemistry_h2_collisional_dissociation)
+
 typedef struct {
-  gr_float *total;
-  gr_float *residual;
-  gr_float *collisional_excitation;
-  gr_float *collisional_ionisation;
-  gr_float *recombination_cooling;
-  gr_float *bremsstrahlung;
-  gr_float *h2_line;
-  gr_float *h2_cie;
-  gr_float *hd;
-  gr_float *dust_gas_grain;
-  gr_float *photoelectric;
-  gr_float *dust_recombination;
-  gr_float *photoionization_heating;
-  gr_float *cloudy_primordial;
-  gr_float *compton;
-  gr_float *rt_photoheating;
-  gr_float *cloudy_metal;
-  gr_float *ci;
-  gr_float *cii;
-  gr_float *oi;
-  gr_float *co;
-  gr_float *oh;
-  gr_float *h2o;
-  gr_float *volumetric_heating;
-  gr_float *specific_heating;
-  gr_float *chemistry_hi_hei;
-  gr_float *chemistry_heii;
-  gr_float *chemistry_h2_gas;
-  gr_float *chemistry_h2_dust;
-  gr_float *chemistry_hi_collisional_ionization;
-  gr_float *chemistry_hii_recombination;
-  gr_float *chemistry_hei_collisional_ionization;
-  gr_float *chemistry_heii_recombination;
-  gr_float *chemistry_heii_collisional_ionization;
-  gr_float *chemistry_heiii_recombination;
-  gr_float *chemistry_h2_hminus_formation;
-  gr_float *chemistry_h2_threebody_formation;
-  gr_float *chemistry_h2_collisional_dissociation;
+#define GRACKLE_COOLING_CONTRIBUTION_DECL(enum_suffix, field) gr_float *field;
+  GRACKLE_COOLING_CONTRIBUTION_CHANNELS(GRACKLE_COOLING_CONTRIBUTION_DECL)
+#undef GRACKLE_COOLING_CONTRIBUTION_DECL
 } grackle_cooling_rate_contribution_data;
 
 int local_calculate_cooling_rate_contributions(
