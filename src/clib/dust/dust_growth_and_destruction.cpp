@@ -79,7 +79,8 @@ struct HNucleiCensus {
   bool use_H, use_H2, use_HD, use_HeH, use_metal_H;
   double hfrac;
   grackle::impl::FortranView<gr_float***> d, metal;
-  grackle::impl::FortranView<gr_float***> HI, HII, HM, H2I, H2II, HDI, HDII, HeHII;
+  grackle::impl::FortranView<gr_float***> HI, HII, HM, H2I, H2II, HDI, HDII,
+      HeHII;
   grackle::impl::FortranView<gr_float***> OH, H2O, CH, CH2, OHII, H2OII, H3OII;
 
   HNucleiCensus(const chemistry_data* my_chemistry,
