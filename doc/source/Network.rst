@@ -643,8 +643,7 @@ photoionisation database
 <https://home.strw.leidenuniv.nl/~ewine/photo/cross_sections.html>`__
 (`Heays, Bosman & van Dishoeck 2017 <https://ui.adsabs.harvard.edu/abs/2017A%26A...602A.105H/abstract>`__;
 ``all_cross_sections_h5.zip``, datasets ``photoionisation`` and
-``photodissociation``). The integral is evaluated with the trapezoidal
-rule on the merged wavelength grids, interpolating the spectrum
+``photodissociation``). The integral is interpolating the spectrum
 logarithmically and the cross sections linearly (zero outside their
 tabulated range), and the result is interpolated in :math:`\log k`
 versus :math:`\log(1+z)` onto the 59 table redshifts, all of which
@@ -654,7 +653,7 @@ vanishes above 108 nm; the predissociating bands lie at 88.5--108 nm),
 and the OH and H\ :sub:`2`\ O values of Table 1 of Heays et al. (2017).
 
 The tables ``HM2012_metal_new.h5`` and ``HM2012_shielded_metal_new.h5``
-(see ``uvb_version.txt`` in the data directory) store each rate as a
+(see ``uvb_version.txt`` in the repository root) store each rate as a
 59-element ``float64`` array in s\ :sup:`-1` on ``/UVBRates/z``, with
 ``units`` and ``provenance`` attributes; the shielded table also carries
 ``/UVBRates/CrossSections`` for :c:data:`self_shielding_method`. Only

@@ -340,13 +340,16 @@ For all on/off integer flags, 0 is off and 1 is on.
    In tabulated mode, this is used to calculate the H number density from
    the total gas density, which is a parameter of the heating/cooling tables.
    When using the non-equilibrium solver, a sensible default is 0.76.
-   However, the tables for tabulated mode were created assuming
+   In tabulated mode the value is fixed by the tables: newer data files
+   record it in a ``HydrogenFractionByMass`` root attribute, which Grackle
+   reads, while older files are taken to have been created assuming
    n\ :sub:`He`/n\ :sub:`H` = 0.1, which corresponds to an H mass fraction of
-   about 0.716.
+   about 0.716. Leave the parameter unset (or negative) to use the tables'
+   value; any other value is an error.
 
    The default value stored in this variable is a negative value that denotes the value is unset.
-   If the user doesn't modify the value, the value is overwritten with a value of about 0.716 in tabulated mode and a value of 0.76 in non-equilibrium mode.
-   While users are allowed to set arbitrary values for the non-equilibrium solver, tabulated mode reports an error if the user initializes this to a value that does not exactly match the default.
+   If the user doesn't modify the value, the value is overwritten with the tables' value in tabulated mode (about 0.716 for the current data files) and a value of 0.76 in non-equilibrium mode.
+   While users are allowed to set arbitrary values for the non-equilibrium solver, tabulated mode reports an error if the user initializes this to a value that does not exactly match the tables' value.
 
 .. c:var:: float DeuteriumToHydrogenRatio
 
